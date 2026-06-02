@@ -11,7 +11,13 @@ function todayStr() { return new Date().toISOString().slice(0, 10); }
 function formatTime(m) { if (!m) return null; if (m < 60) return `${m}m`; const h = Math.floor(m/60), r = m%60; return r ? `${h}h ${r}m` : `${h}h`; }
 function isThisWeek(s) { if (!s) return false; const d = new Date(s+"T00:00:00"), t = new Date(); t.setHours(0,0,0,0); const e = new Date(t); e.setDate(t.getDate()+7); return d >= t && d < e; }
 function isToday(s) { return s === todayStr(); }
-function isTomorrow(s) { if (!s) return false; const t = new Date(); t.setHours(0,0,0,0); const tom = new Date(t); tom.setDate(t.getDate()+1); return s === tom.toISOString().slice(0,10); }
+function isTomorrow(s) {
+  if (!s) return false;
+  const t = new Date(); t.setHours(0,0,0,0);
+  const tom = new Date(t); tom.setDate(t.getDate()+1);
+  const tomStr = tom.getFullYear()+"-"+String(tom.getMonth()+1).padStart(2,"0")+"-"+String(tom.getDate()).padStart(2,"0");
+  return s === tomStr;
+}
 function isOverdue(s) { if (!s) return false; return s < todayStr(); }
 function daysOverdue(s) { if (!s) return 0; const d = new Date(s+"T00:00:00"), t = new Date(); t.setHours(0,0,0,0); return Math.round((t-d)/86400000); }
 function sortTasks(arr) {
