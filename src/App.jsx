@@ -11,6 +11,7 @@ function todayStr() { return new Date().toISOString().slice(0, 10); }
 function formatTime(m) { if (!m) return null; if (m < 60) return `${m}m`; const h = Math.floor(m/60), r = m%60; return r ? `${h}h ${r}m` : `${h}h`; }
 function isThisWeek(s) { if (!s) return false; const d = new Date(s+"T00:00:00"), t = new Date(); t.setHours(0,0,0,0); const e = new Date(t); e.setDate(t.getDate()+7); return d >= t && d < e; }
 function isToday(s) { return s === todayStr(); }
+function isTomorrow(s) { if (!s) return false; const t = new Date(); t.setHours(0,0,0,0); const tom = new Date(t); tom.setDate(t.getDate()+1); return s === tom.toISOString().slice(0,10); }
 function isOverdue(s) { if (!s) return false; return s < todayStr(); }
 function daysOverdue(s) { if (!s) return 0; const d = new Date(s+"T00:00:00"), t = new Date(); t.setHours(0,0,0,0); return Math.round((t-d)/86400000); }
 function sortTasks(arr) {
@@ -256,8 +257,8 @@ const styles = `
   .subtask-form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
 
   /* Inline subtask expand in project view */
-  .expand-btn{background:none;border:none;cursor:pointer;font-family:var(--font-sans);font-size:10px;font-weight:700;color:var(--blue);padding:0;letter-spacing:0.03em;display:flex;align-items:center;gap:3px;}
-  .expand-btn:hover{color:var(--blue-deep);}
+  .expand-btn{background:var(--blue-pale);border:1px solid rgba(77,163,201,0.3);border-radius:var(--radius-pill);cursor:pointer;font-family:var(--font-sans);font-size:11px;font-weight:700;color:var(--blue-deep);padding:4px 10px;letter-spacing:0.03em;display:flex;align-items:center;gap:5px;min-height:28px;transition:all 0.14s;}
+  .expand-btn:hover{background:var(--blue-pale);border-color:var(--blue);}
   .inline-subtasks{padding-left:32px;border-top:1px solid var(--rule);animation:rowIn 0.18s var(--ease);}
   .inline-subtask-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--rule);}
   .inline-subtask-row:last-child{border-bottom:none;}
@@ -630,8 +631,11 @@ function TodayView({ tasks, context, projectAccents, onAdd, onOpenDetail, onTogg
   const dueTodayParents = useMemo(()=>sortTasks(activeParents.filter(t=>isToday(t.due_date))),[tasks,context]);
   const dueTodaySubtasks = useMemo(()=>sortTasks(activeSubtasks.filter(t=>isToday(t.due_date))),[tasks,context]);
 
-  const thisWeekParents = useMemo(()=>sortTasks(activeParents.filter(t=>t.due_date&&isThisWeek(t.due_date)&&!isToday(t.due_date))),[tasks,context]);
-  const thisWeekSubtasks = useMemo(()=>sortTasks(activeSubtasks.filter(t=>t.due_date&&isThisWeek(t.due_date)&&!isToday(t.due_date))),[tasks,context]);
+  const dueTomorrowParents = useMemo(()=>sortTasks(activeParents.filter(t=>isTomorrow(t.due_date))),[tasks,context]);
+  const dueTomorrowSubtasks = useMemo(()=>sortTasks(activeSubtasks.filter(t=>isTomorrow(t.due_date))),[tasks,context]);
+
+  const thisWeekParents = useMemo(()=>sortTasks(activeParents.filter(t=>t.due_date&&isThisWeek(t.due_date)&&!isToday(t.due_date)&&!isTomorrow(t.due_date))),[tasks,context]);
+  const thisWeekSubtasks = useMemo(()=>sortTasks(activeSubtasks.filter(t=>t.due_date&&isThisWeek(t.due_date)&&!isToday(t.due_date)&&!isTomorrow(t.due_date))),[tasks,context]);
 
   const completedToday = useMemo(()=>allCtx.filter(t=>!t.parent_id&&t.archived&&t.completed_at&&t.completed_at.slice(0,10)===todayStr())
     .sort((a,b)=>b.completed_at.localeCompare(a.completed_at)),[tasks,context]);
@@ -639,13 +643,14 @@ function TodayView({ tasks, context, projectAccents, onAdd, onOpenDetail, onTogg
   const doneCount = completedToday.length;
   const totalOverdue = overdueParents.length + overdueSubtasks.length;
   const todayItems = [...dueTodayParents,...dueTodaySubtasks];
+  const tomorrowItems = [...dueTomorrowParents,...dueTomorrowSubtasks];
   const weekItems = [...thisWeekParents,...thisWeekSubtasks];
   const wv = showMoreWeek ? weekItems : weekItems.slice(0,3);
   const wh = weekItems.length - 3;
 
   const todayFmt = new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
   const activeCount = activeParents.length;
-  const allClear = totalOverdue===0&&todayItems.length===0&&weekItems.length===0;
+  const allClear = totalOverdue===0&&todayItems.length===0&&tomorrowItems.length===0&&weekItems.length===0;
   const ctxC = CTX[context];
 
   function getParent(parentId) {
@@ -705,6 +710,10 @@ function TodayView({ tasks, context, projectAccents, onAdd, onOpenDetail, onTogg
         {todayItems.length>0&&<div className="section-block">
           <div className="section-header"><span className="section-title">Due today</span></div>
           {todayItems.map(t=>renderItem(t))}
+        </div>}
+        {tomorrowItems.length>0&&<div className="section-block">
+          <div className="section-header"><span className="section-title">Tomorrow</span></div>
+          {tomorrowItems.map(t=>renderItem(t))}
         </div>}
         {weekItems.length>0&&<div className="section-block">
           <div className="section-header">
