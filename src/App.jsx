@@ -457,7 +457,7 @@ function TaskRow({ task, subtasks, onToggle, onOpenDetail, onDelete, showProject
 }
 
 // ── Subtask row in Today view ─────────────────────────────────────────────────
-function SubtaskTodayRow({ subtask, parentTitle, onToggle, onOpenParent, urgent }) {
+function SubtaskTodayRow({ subtask, parentTitle, parentProject, onToggle, onOpenParent, urgent }) {
   const days = urgent ? daysOverdue(subtask.due_date) : 0;
   return (
     <div className="subtask-row">
@@ -467,7 +467,11 @@ function SubtaskTodayRow({ subtask, parentTitle, onToggle, onOpenParent, urgent 
         <div className="task-meta">
           {!urgent&&<span className={`p-indicator ${subtask.priority}`} style={{fontSize:9,padding:"1px 5px"}}>{subtask.priority==="medium"?"Med":subtask.priority}</span>}
           {urgent&&<span className="overdue-days">{days===1?"1 day overdue":`${days} days overdue`}</span>}
-          <span className="parent-label"><span className="parent-label-arrow">↳</span>{parentTitle}</span>
+          <span className="parent-label">
+            <span className="parent-label-arrow">↳</span>
+            {parentProject && <span style={{color:"var(--blue)",fontWeight:700}}>{parentProject} · </span>}
+            {parentTitle}
+          </span>
         </div>
       </div>
     </div>
@@ -519,16 +523,16 @@ function TodayView({ tasks, context, projectAccents, onAdd, onOpenDetail, onTogg
   const allClear = totalOverdue===0&&todayItems.length===0&&weekItems.length===0;
   const ctxC = CTX[context];
 
-  function getParentTitle(parentId) {
-    const p = tasks.find(t=>t.id===parentId);
-    return p ? p.title : "";
+  function getParent(parentId) {
+    return tasks.find(t=>t.id===parentId);
   }
 
   function renderItem(t) {
     if (t.parent_id) {
-      return <SubtaskTodayRow key={t.id} subtask={t} parentTitle={getParentTitle(t.parent_id)}
+      const parent = getParent(t.parent_id);
+      return <SubtaskTodayRow key={t.id} subtask={t} parentTitle={parent?.title||""} parentProject={parent?.project||null}
         onToggle={()=>onToggle(t.id)}
-        onOpenParent={()=>{const p=tasks.find(x=>x.id===t.parent_id);if(p)onOpenDetail(p);}} />;
+        onOpenParent={()=>{if(parent)onOpenDetail(parent);}} />;
     }
     return <TaskRow key={t.id} task={t} subtasks={subtasksMap[t.id]||[]} showProject projectAccents={projectAccents}
       onToggle={()=>onToggle(t.id)} onOpenDetail={()=>onOpenDetail(t)} onDelete={()=>onDelete(t.id)}
@@ -537,9 +541,10 @@ function TodayView({ tasks, context, projectAccents, onAdd, onOpenDetail, onTogg
 
   function renderUrgentItem(t) {
     if (t.parent_id) {
-      return <SubtaskTodayRow key={t.id} subtask={t} urgent parentTitle={getParentTitle(t.parent_id)}
+      const parent = getParent(t.parent_id);
+      return <SubtaskTodayRow key={t.id} subtask={t} urgent parentTitle={parent?.title||""} parentProject={parent?.project||null}
         onToggle={()=>onToggle(t.id)}
-        onOpenParent={()=>{const p=tasks.find(x=>x.id===t.parent_id);if(p)onOpenDetail(p);}} />;
+        onOpenParent={()=>{if(parent)onOpenDetail(parent);}} />;
     }
     return <TaskRow key={t.id} task={t} subtasks={subtasksMap[t.id]||[]} urgent showProject projectAccents={projectAccents}
       onToggle={()=>onToggle(t.id)} onOpenDetail={()=>onOpenDetail(t)} onDelete={()=>onDelete(t.id)}
