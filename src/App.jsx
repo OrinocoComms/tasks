@@ -349,7 +349,7 @@ function TodayView({ tasks, context, projectAccents, onAdd, onEdit, onToggle, on
   );
 }
 
-function ProjectsView({ tasks, context, projectAccents, onAdd, onSelectProject, onCtxChange }) {
+function ProjectsView({ tasks, context, projectAccents, onAdd, onSelectProject, onCtxChange, onEdit, onToggle, onDelete }) {
   const ctxTasks = tasks.filter(t=>t.context===context);
   const projects = useMemo(()=>{
     const map={};
@@ -403,7 +403,7 @@ function ProjectsView({ tasks, context, projectAccents, onAdd, onSelectProject, 
             </>}
             {noProject.length>0&&<div className="solo-section">
               <div className="solo-label">No project</div>
-              {noProject.map(t=><TaskRow key={t.id} task={t} showProject={false} onToggle={()=>{}} onEdit={()=>{}} onDelete={()=>{}}/>)}
+              {noProject.map(t=><TaskRow key={t.id} task={t} showProject={false} onToggle={()=>onToggle(t.id)} onEdit={()=>onEdit(t)} onDelete={()=>onDelete(t.id)}/>)}
             </div>}
           </>}
       </div>
@@ -527,7 +527,8 @@ export default function App() {
     if (selectedProject) return <ProjectDetailView projectName={selectedProject} tasks={tasks} context={context} projectAccents={projectAccents}
       onBack={()=>setSelectedProject(null)} onAdd={openAdd} onEdit={openEdit} onToggle={handleToggle} onDelete={handleDelete}/>;
     return <ProjectsView tasks={tasks} context={context} projectAccents={projectAccents}
-      onAdd={openAdd} onSelectProject={setSelectedProject} onCtxChange={handleCtxChange}/>;
+      onAdd={openAdd} onSelectProject={setSelectedProject} onCtxChange={handleCtxChange}
+      onEdit={openEdit} onToggle={handleToggle} onDelete={handleDelete}/>;
   }
 
   return (
