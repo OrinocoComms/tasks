@@ -642,9 +642,19 @@ function TodayView({ tasks, context, projectAccents, onAdd, onOpenDetail, onTogg
 
   const doneCount = completedToday.length;
   const totalOverdue = overdueParents.length + overdueSubtasks.length;
-  const todayItems = [...dueTodayParents,...dueTodaySubtasks];
-  const tomorrowItems = [...dueTomorrowParents,...dueTomorrowSubtasks];
-  const weekItems = [...thisWeekParents,...thisWeekSubtasks];
+  // Each section shows only items whose own due_date matches — no mixing
+  const todayItems = useMemo(()=>sortTasks([
+    ...activeParents.filter(t=>isToday(t.due_date)),
+    ...activeSubtasks.filter(t=>isToday(t.due_date))
+  ]),[tasks,context]);
+  const tomorrowItems = useMemo(()=>sortTasks([
+    ...activeParents.filter(t=>isTomorrow(t.due_date)),
+    ...activeSubtasks.filter(t=>isTomorrow(t.due_date))
+  ]),[tasks,context]);
+  const weekItems = useMemo(()=>sortTasks([
+    ...activeParents.filter(t=>t.due_date&&isThisWeek(t.due_date)&&!isToday(t.due_date)&&!isTomorrow(t.due_date)),
+    ...activeSubtasks.filter(t=>t.due_date&&isThisWeek(t.due_date)&&!isToday(t.due_date)&&!isTomorrow(t.due_date))
+  ]),[tasks,context]);
   const wv = showMoreWeek ? weekItems : weekItems.slice(0,3);
   const wh = weekItems.length - 3;
 
