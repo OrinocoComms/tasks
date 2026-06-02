@@ -90,7 +90,7 @@ const styles = `
   .proj-header-info{flex:1;min-width:0;}
   .proj-header-name{font-size:15px;font-weight:800;line-height:1.2;}
   .proj-header-sub{font-size:11px;font-weight:500;color:var(--muted);margin-top:2px;}
-  .list-wrap{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(16,42,67,0.15) transparent;padding:0 0 calc(var(--tab-h)+16px);}
+  .list-wrap{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(16,42,67,0.15) transparent;padding:0 0 calc(var(--tab-h) + env(safe-area-inset-bottom) + 16px);}
   .overdue-block{background:var(--overdue-bg);border-bottom:1px solid var(--overdue-border);padding:0 20px;}
   .overdue-header{display:flex;align-items:center;gap:8px;padding:12px 0 10px;border-bottom:1px solid var(--overdue-border);}
   .overdue-icon{width:18px;height:18px;border-radius:50%;background:var(--overdue-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -129,6 +129,7 @@ const styles = `
   .tag-chip{font-size:10px;font-weight:600;padding:2px 8px;border-radius:var(--radius-pill);background:var(--blue-pale);color:var(--blue-deep);border:1px solid rgba(77,163,201,0.22);}
   .row-actions{display:flex;gap:2px;opacity:0;transition:opacity 0.14s;}
   .task-row:hover .row-actions{opacity:1;}
+  @media(hover:none){.row-actions{opacity:1;}}
   .act-btn{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:var(--radius);font-size:13px;transition:all 0.14s;}
   .act-btn:hover{background:var(--blue-pale);color:var(--blue-deep);}
   .act-btn.del:hover{background:var(--high-bg);color:var(--high);}
@@ -156,7 +157,7 @@ const styles = `
   .proj-overdue{position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--overdue-text);background:var(--high-bg);padding:2px 6px;border-radius:var(--radius-pill);}
   .solo-section{margin-top:24px;}
   .solo-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;padding-bottom:8px;border-bottom:1px solid var(--rule);}
-  .tab-bar{position:absolute;bottom:0;left:0;right:0;height:var(--tab-h);background:var(--white);border-top:1px solid var(--rule);display:flex;z-index:100;box-shadow:0 -4px 16px rgba(16,42,67,0.06);}
+  .tab-bar{position:absolute;bottom:0;left:0;right:0;height:calc(var(--tab-h) + env(safe-area-inset-bottom));background:var(--white);border-top:1px solid var(--rule);display:flex;z-index:100;box-shadow:0 -4px 16px rgba(16,42,67,0.06);padding-bottom:env(safe-area-inset-bottom);}
   .tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:none;background:transparent;cursor:pointer;color:var(--muted);transition:color 200ms var(--ease);padding-bottom:4px;position:relative;}
   .tab-btn::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:0;height:2px;background:var(--blue);border-radius:0 0 2px 2px;transition:width 200ms var(--ease);}
   .tab-btn.active{color:var(--blue-deep);}
@@ -428,7 +429,7 @@ function ProjectDetailView({ projectName, tasks, context, projectAccents, onBack
         </div>
         <button className="btn-new-ink" style={{background:ctxC.bgDeep}} onClick={()=>onAdd(projectName)}>+ Add</button>
       </div>
-      <div className="list-wrap" style={{padding:"0 20px calc(var(--tab-h)+16px)"}}>
+      <div className="list-wrap" style={{padding:`0 20px calc(var(--tab-h) + env(safe-area-inset-bottom) + 16px)`}}>
         {active.length===0?<div className="empty">No active tasks in this project.</div>
           :active.map(t=><TaskRow key={t.id} task={t} showProject={false}
               onToggle={()=>onToggle(t.id)} onEdit={()=>onEdit(t)} onDelete={()=>onDelete(t.id)}/>)}
