@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { supabase } from "./lib/supabase.js";
 
-const LOCAL_KEY = "tasks_orinoco_v4";
+const LOCAL_KEY = "tasks_orinoco_v5";
 function loadLocal() { try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]"); } catch { return []; } }
 function saveLocal(t) { localStorage.setItem(LOCAL_KEY, JSON.stringify(t)); }
 function genId() { return crypto.randomUUID(); }
@@ -60,6 +60,8 @@ const styles = `
   html,body,#root{height:100%;}
   body{font-family:var(--font-sans);background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;overflow:hidden;}
   .app{display:flex;flex-direction:column;height:100dvh;width:100%;max-width:640px;margin:0 auto;position:relative;background:var(--paper);overflow:hidden;}
+
+  /* Header */
   .today-header{flex-shrink:0;padding:16px 20px 0;box-shadow:var(--shadow-2);transition:background 300ms var(--ease);}
   .today-header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
   .wordmark-name{font-family:var(--font-display);font-size:18px;color:var(--white);letter-spacing:-0.01em;}
@@ -75,6 +77,8 @@ const styles = `
   .done-badge.has-done{background:var(--leaf);color:var(--white);}
   .btn-new-white{display:flex;align-items:center;padding:0 14px;height:30px;border-radius:var(--radius-pill);border:none;background:var(--white);font-family:var(--font-sans);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 200ms var(--ease);box-shadow:var(--shadow-1);}
   .btn-new-white:hover{background:var(--blue-pale);}
+
+  /* Plain header */
   .plain-header{flex-shrink:0;background:var(--white);padding:14px 16px 13px;border-bottom:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow-1);gap:8px;}
   .plain-header-left{display:flex;flex-direction:column;gap:3px;}
   .plain-title{font-family:var(--font-display);font-size:16px;color:var(--ink);}
@@ -84,39 +88,58 @@ const styles = `
   .ctx-btn-dark{font-family:var(--font-sans);font-size:11px;font-weight:700;letter-spacing:0.03em;padding:5px 12px;border-radius:var(--radius-pill);border:none;background:transparent;color:var(--muted);cursor:pointer;transition:all 200ms var(--ease);white-space:nowrap;}
   .btn-new-ink{display:flex;align-items:center;padding:0 14px;height:30px;border-radius:var(--radius-pill);border:none;color:var(--white);font-family:var(--font-sans);font-size:12px;font-weight:700;cursor:pointer;transition:opacity 200ms;}
   .btn-new-ink:hover{opacity:0.85;}
+
+  /* Project header */
   .proj-header{flex-shrink:0;background:var(--white);padding:14px 20px;border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-1);}
   .proj-back{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--rule-med);border-radius:var(--radius);background:transparent;color:var(--ink-soft);cursor:pointer;font-size:14px;transition:all 200ms var(--ease);}
   .proj-back:hover{border-color:var(--blue);color:var(--blue);}
   .proj-header-info{flex:1;min-width:0;}
   .proj-header-name{font-size:15px;font-weight:800;line-height:1.2;}
   .proj-header-sub{font-size:11px;font-weight:500;color:var(--muted);margin-top:2px;}
+
+  /* Lists */
   .list-wrap{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(16,42,67,0.15) transparent;padding:0 0 calc(var(--tab-h) + env(safe-area-inset-bottom) + 16px);}
+
+  /* Overdue */
   .overdue-block{background:var(--overdue-bg);border-bottom:1px solid var(--overdue-border);padding:0 20px;}
   .overdue-header{display:flex;align-items:center;gap:8px;padding:12px 0 10px;border-bottom:1px solid var(--overdue-border);}
   .overdue-icon{width:18px;height:18px;border-radius:50%;background:var(--overdue-accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .overdue-icon::after{content:'!';color:white;font-size:11px;font-weight:800;}
   .overdue-title-label{font-size:10px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--overdue-text);flex:1;}
   .overdue-count{font-size:10px;font-weight:700;color:var(--overdue-accent);background:rgba(231,76,60,0.12);padding:2px 8px;border-radius:var(--radius-pill);}
+
+  /* Sections */
   .section-block{padding:0 20px;border-bottom:1px solid var(--rule);}
   .section-block:last-child{border-bottom:none;}
   .section-header{display:flex;align-items:center;justify-content:space-between;padding:14px 0 2px;}
   .section-title{font-size:10px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);}
   .section-show-more{font-size:10px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;padding:0;}
+
+  /* Task rows */
   .task-row{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid var(--rule);animation:rowIn 0.2s var(--ease);}
   .task-row:last-child{border-bottom:none;}
   .overdue-block .task-row{border-bottom-color:var(--overdue-border);}
   .overdue-block .task-row:last-child{border-bottom:none;}
   @keyframes rowIn{from{opacity:0;transform:translateY(-3px);}to{opacity:1;transform:translateY(0);}}
+
+  /* Subtask rows — indented */
+  .subtask-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0 8px 28px;border-bottom:1px solid var(--rule);animation:rowIn 0.2s var(--ease);}
+  .subtask-row:last-child{border-bottom:none;}
+
   .check-btn{width:19px;height:19px;border-radius:50%;border:2px solid var(--rule-med);background:transparent;cursor:pointer;flex-shrink:0;margin-top:1px;transition:all 200ms var(--ease);display:flex;align-items:center;justify-content:center;}
   .check-btn:hover{border-color:var(--leaf);}
   .check-btn.checked{background:var(--leaf);border-color:var(--leaf);}
   .check-btn.checked::after{content:'';width:5px;height:8px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translateY(-1px);display:block;}
   .check-btn.urgent{border-color:var(--overdue-accent);}
   .check-btn.urgent:hover{background:var(--overdue-accent);border-color:var(--overdue-accent);}
+  .check-btn.small{width:15px;height:15px;margin-top:2px;}
+
   .task-body{flex:1;min-width:0;cursor:pointer;}
   .task-title{font-size:14px;font-weight:600;line-height:1.4;color:var(--ink);word-break:break-word;}
   .task-title.done{text-decoration:line-through;color:var(--muted);font-weight:500;}
   .task-title.overdue-title-text{color:var(--overdue-text);}
+  .task-title.subtask{font-size:13px;font-weight:500;}
+
   .task-meta{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-top:4px;}
   .p-indicator{font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;padding:2px 7px;border-radius:var(--radius-pill);}
   .p-indicator.high{color:var(--high);background:var(--high-bg);}
@@ -127,20 +150,37 @@ const styles = `
   .proj-pill{font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--radius-pill);letter-spacing:0.03em;cursor:pointer;transition:filter 150ms;border:none;font-family:inherit;}
   .proj-pill:hover{filter:brightness(0.88);text-decoration:underline;}
   .tag-chip{font-size:10px;font-weight:600;padding:2px 8px;border-radius:var(--radius-pill);background:var(--blue-pale);color:var(--blue-deep);border:1px solid rgba(77,163,201,0.22);}
+
+  /* Parent label on subtask in Today view */
+  .parent-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:0.03em;display:flex;align-items:center;gap:4px;margin-top:3px;}
+  .parent-label-arrow{opacity:0.5;font-size:9px;}
+
+  /* Subtask progress on parent */
+  .subtask-progress{font-size:10px;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:5px;}
+  .subtask-progress-bar{height:3px;background:var(--rule);border-radius:2px;overflow:hidden;width:40px;}
+  .subtask-progress-fill{height:100%;border-radius:2px;background:var(--leaf);transition:width 0.3s var(--ease);}
+
   .row-actions{display:flex;gap:2px;opacity:0;transition:opacity 0.14s;}
   .task-row:hover .row-actions{opacity:1;}
+  .subtask-row:hover .row-actions{opacity:1;}
   @media(hover:none){.row-actions{opacity:1;}}
+
   .act-btn{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:var(--radius);font-size:13px;transition:all 0.14s;}
   .act-btn:hover{background:var(--blue-pale);color:var(--blue-deep);}
   .act-btn.del:hover{background:var(--high-bg);color:var(--high);}
+
   .completed-strip{padding:0 20px;}
   .arch-toggle{display:inline-flex;align-items:center;gap:7px;padding:12px 0 4px;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);cursor:pointer;user-select:none;}
   .arch-toggle:hover{color:var(--ink-soft);}
+
+  /* Empty */
   .empty-today{padding:40px 20px;text-align:center;}
   .empty-today-icon{width:52px;height:52px;border-radius:50%;background:var(--low-bg);border:2px solid var(--low);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px;color:var(--low);}
   .empty-today-msg{font-size:15px;font-weight:800;color:var(--ink);margin-bottom:5px;}
   .empty-today-sub{font-size:12px;font-weight:500;color:var(--muted);}
   .empty{padding:52px 20px;text-align:center;font-size:13px;font-weight:600;color:var(--muted);}
+
+  /* Projects */
   .projects-wrap{flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(16,42,67,0.15) transparent;padding:16px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) + 16px);}
   .projects-eyebrow{font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;}
   .projects-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;}
@@ -157,6 +197,8 @@ const styles = `
   .proj-overdue{position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--overdue-text);background:var(--high-bg);padding:2px 6px;border-radius:var(--radius-pill);}
   .solo-section{margin-top:24px;}
   .solo-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;padding-bottom:8px;border-bottom:1px solid var(--rule);}
+
+  /* Tab bar */
   .tab-bar{position:absolute;bottom:0;left:0;right:0;height:calc(var(--tab-h) + env(safe-area-inset-bottom));background:var(--white);border-top:1px solid var(--rule);display:flex;z-index:100;box-shadow:0 -4px 16px rgba(16,42,67,0.06);padding-bottom:env(safe-area-inset-bottom);}
   .tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:none;background:transparent;cursor:pointer;color:var(--muted);transition:color 200ms var(--ease);padding-bottom:4px;position:relative;}
   .tab-btn::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:0;height:2px;background:var(--blue);border-radius:0 0 2px 2px;transition:width 200ms var(--ease);}
@@ -165,6 +207,8 @@ const styles = `
   .tab-icon{font-size:26px;line-height:1;}
   .tab-label{font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;}
   .tab-badge{position:absolute;top:8px;right:calc(50% - 16px);width:7px;height:7px;border-radius:50%;background:var(--overdue-accent);border:1.5px solid var(--white);}
+
+  /* Task detail modal */
   .overlay{position:fixed;inset:0;background:rgba(16,42,67,0.45);backdrop-filter:blur(4px);z-index:300;display:flex;align-items:flex-end;justify-content:center;animation:ovIn 0.18s ease;}
   @keyframes ovIn{from{opacity:0;}to{opacity:1;}}
   .modal{background:var(--white);border-radius:16px 16px 0 0;width:100%;max-width:640px;max-height:88vh;overflow-y:auto;padding:24px 24px 40px;animation:modUp 0.25s var(--ease);box-shadow:var(--shadow-3);}
@@ -193,8 +237,26 @@ const styles = `
   .btn-primary:disabled{opacity:0.38;cursor:not-allowed;}
   .btn-cancel{padding:12px 18px;border-radius:var(--radius-pill);border:1.5px solid var(--rule-med);background:transparent;color:var(--ink-soft);font-family:var(--font-sans);font-size:13px;font-weight:600;cursor:pointer;transition:all 200ms var(--ease);}
   .btn-cancel:hover{border-color:var(--ink-soft);color:var(--ink);}
+
+  /* Subtask section inside task detail */
+  .subtasks-section{margin-top:20px;padding-top:16px;border-top:1px solid var(--rule);}
+  .subtasks-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .subtasks-title{font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-soft);}
+  .btn-add-subtask{font-family:var(--font-sans);font-size:11px;font-weight:700;color:var(--blue);background:none;border:none;cursor:pointer;padding:0;letter-spacing:0.02em;}
+  .btn-add-subtask:hover{color:var(--blue-deep);}
+  .subtask-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--rule);}
+  .subtask-item:last-child{border-bottom:none;}
+  .subtask-item-body{flex:1;min-width:0;}
+  .subtask-item-title{font-size:13px;font-weight:500;color:var(--ink);line-height:1.35;}
+  .subtask-item-title.done{text-decoration:line-through;color:var(--muted);}
+  .subtask-item-meta{display:flex;gap:6px;align-items:center;margin-top:3px;}
+  .subtask-date{font-size:10px;font-weight:600;color:var(--muted);}
+  .subtask-date.overdue{color:var(--overdue-accent);}
+  .subtask-form{background:var(--paper);border-radius:var(--radius);padding:12px;margin-top:8px;}
+  .subtask-form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
 `;
 
+// ── TaskForm ──────────────────────────────────────────────────────────────────
 function TaskForm({ task, defaultProject, defaultContext, onSave, onCancel }) {
   const [title, setTitle] = useState(task?.title || "");
   const [priority, setPriority] = useState(task?.priority || "medium");
@@ -208,7 +270,7 @@ function TaskForm({ task, defaultProject, defaultContext, onSave, onCancel }) {
   function submit() {
     if (!title.trim()) return;
     const tags = tagsInput.split(",").map(t => t.trim()).filter(Boolean);
-    onSave({ title:title.trim(), priority, context, due_date:dueDate||null, estimated_minutes:estMins?parseInt(estMins):null, project:project.trim()||null, tags });
+    onSave({ title:title.trim(), priority, context, due_date:dueDate||null, estimated_minutes:estMins?parseInt(estMins):null, project:project.trim()||null, tags, parent_id:null });
   }
   function onKey(e) { if ((e.metaKey||e.ctrlKey)&&e.key==="Enter") submit(); if (e.key==="Escape") onCancel(); }
   const ctxC = CTX[context];
@@ -248,19 +310,137 @@ function TaskForm({ task, defaultProject, defaultContext, onSave, onCancel }) {
   );
 }
 
-function TaskRow({ task, onToggle, onEdit, onDelete, showProject, projectAccents, onNavigateProject, urgent }) {
+// ── Task Detail Modal (with subtasks) ─────────────────────────────────────────
+function TaskDetail({ task, subtasks, onClose, onEdit, onToggle, onDelete, onAddSubtask, onToggleSubtask, onDeleteSubtask }) {
+  const [showSubtaskForm, setShowSubtaskForm] = useState(false);
+  const [stTitle, setStTitle] = useState("");
+  const [stDue, setStDue] = useState("");
+  const [stPriority, setStPriority] = useState("medium");
+  const stRef = useRef();
+
+  useEffect(() => { if (showSubtaskForm) stRef.current?.focus(); }, [showSubtaskForm]);
+
+  function submitSubtask() {
+    if (!stTitle.trim()) return;
+    onAddSubtask({ title: stTitle.trim(), due_date: stDue || null, priority: stPriority });
+    setStTitle(""); setStDue(""); setStPriority("medium"); setShowSubtaskForm(false);
+  }
+
+  const doneCount = subtasks.filter(s => s.archived).length;
+  const totalCount = subtasks.length;
+  const ctxC = CTX[task.context] || CTX.orinoco;
+
+  function formatDateShort(s) {
+    if (!s) return null;
+    const d = new Date(s+"T00:00:00"), t = new Date(); t.setHours(0,0,0,0);
+    const diff = Math.round((d-t)/86400000);
+    if (diff===0) return "today"; if (diff===1) return "tomorrow";
+    if (diff<0) return `${Math.abs(diff)}d overdue`;
+    return d.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+  }
+
+  return (
+    <div className="overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal" style={{borderTop:`3px solid ${ctxC.bg}`}}>
+        <div className="modal-head">Task detail</div>
+
+        {/* Task title + actions */}
+        <div style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:16}}>
+          <button className={`check-btn${task.archived?" checked":""}`} style={{marginTop:2,flexShrink:0}} onClick={()=>onToggle(task.id)} />
+          <div style={{flex:1}}>
+            <div style={{fontSize:16,fontWeight:700,color:task.archived?"var(--muted)":"var(--ink)",textDecoration:task.archived?"line-through":"none",lineHeight:1.35}}>{task.title}</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:5}}>
+              <span className={`p-indicator ${task.priority}`}>{task.priority==="medium"?"Med":task.priority}</span>
+              {task.due_date && <span className="meta-txt" style={isOverdue(task.due_date)?{color:"var(--overdue-accent)",fontWeight:700}:{}}>{formatDateShort(task.due_date)}</span>}
+              {task.project && <span className="meta-txt">· {task.project}</span>}
+              {(task.tags||[]).map(t=><span key={t} className="tag-chip">#{t}</span>)}
+            </div>
+          </div>
+        </div>
+
+        <div style={{display:"flex",gap:8,marginBottom:4}}>
+          <button className="btn-primary" style={{background:ctxC.bgDeep,flex:1}} onClick={()=>onEdit(task)}>Edit task</button>
+          <button className="btn-cancel" style={{color:"var(--high)",borderColor:"rgba(192,57,43,0.2)"}} onClick={()=>{onDelete(task.id);onClose();}}>Delete</button>
+        </div>
+
+        {/* Subtasks */}
+        <div className="subtasks-section">
+          <div className="subtasks-head">
+            <span className="subtasks-title">
+              Subtasks {totalCount>0 && <span style={{color:"var(--muted)",fontWeight:500}}>({doneCount}/{totalCount})</span>}
+            </span>
+            {!showSubtaskForm && <button className="btn-add-subtask" onClick={()=>setShowSubtaskForm(true)}>+ Add subtask</button>}
+          </div>
+
+          {subtasks.map(st => (
+            <div key={st.id} className="subtask-item">
+              <button className={`check-btn small${st.archived?" checked":""}`} onClick={()=>onToggleSubtask(st.id)} />
+              <div className="subtask-item-body">
+                <div className={`subtask-item-title${st.archived?" done":""}`}>{st.title}</div>
+                {st.due_date && (
+                  <div className="subtask-item-meta">
+                    <span className={`subtask-date${isOverdue(st.due_date)&&!st.archived?" overdue":""}`}>{formatDateShort(st.due_date)}</span>
+                    <span className={`p-indicator ${st.priority}`} style={{fontSize:9,padding:"1px 5px"}}>{st.priority==="medium"?"Med":st.priority}</span>
+                  </div>
+                )}
+              </div>
+              <button className="act-btn del" style={{opacity:1}} onClick={()=>onDeleteSubtask(st.id)}>✕</button>
+            </div>
+          ))}
+
+          {totalCount === 0 && !showSubtaskForm && (
+            <div style={{fontSize:12,color:"var(--muted)",padding:"8px 0"}}>No subtasks yet — add one to break this task down.</div>
+          )}
+
+          {showSubtaskForm && (
+            <div className="subtask-form">
+              <input type="text" ref={stRef} className="field-input" placeholder="Subtask title" value={stTitle}
+                onChange={e=>setStTitle(e.target.value)}
+                onKeyDown={e=>{if(e.key==="Enter")submitSubtask();if(e.key==="Escape")setShowSubtaskForm(false);}} />
+              <div className="subtask-form-row">
+                <input type="date" className="field-input" value={stDue} onChange={e=>setStDue(e.target.value)} />
+                <div className="p-opts">
+                  {["high","medium","low"].map(p=>(
+                    <button key={p} type="button" className={`p-opt ${p} ${stPriority===p?"on":""}`} onClick={()=>setStPriority(p)} style={{fontSize:10,padding:"6px 0"}}>
+                      {p==="medium"?"Med":p[0].toUpperCase()+p.slice(1)}</button>))}
+                </div>
+              </div>
+              <div className="modal-actions" style={{marginTop:10}}>
+                <button className="btn-cancel" style={{padding:"8px 14px"}} onClick={()=>setShowSubtaskForm(false)}>Cancel</button>
+                <button className="btn-primary" style={{background:ctxC.bgDeep,padding:"8px"}} onClick={submitSubtask} disabled={!stTitle.trim()}>Add subtask</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── TaskRow ───────────────────────────────────────────────────────────────────
+function TaskRow({ task, subtasks, onToggle, onOpenDetail, onDelete, showProject, projectAccents, onNavigateProject, urgent }) {
   const tl = formatTime(task.estimated_minutes);
   const accent = task.project&&projectAccents ? projectAccents[task.project] : null;
   const days = urgent ? daysOverdue(task.due_date) : 0;
+  const subDone = (subtasks||[]).filter(s=>s.archived).length;
+  const subTotal = (subtasks||[]).length;
+  const pct = subTotal > 0 ? Math.round((subDone/subTotal)*100) : 0;
+
   return (
     <div className={`task-row${urgent?" is-overdue":""}`}>
       <button className={`check-btn${task.archived?" checked":""}${urgent?" urgent":""}`} onClick={onToggle} />
-      <div className="task-body" onClick={onEdit}>
+      <div className="task-body" onClick={onOpenDetail}>
         <div className={`task-title${task.archived?" done":""}${urgent?" overdue-title-text":""}`}>{task.title}</div>
         <div className="task-meta">
           {!urgent&&<span className={`p-indicator ${task.priority}`}>{task.priority==="medium"?"Med":task.priority}</span>}
           {urgent&&<span className="overdue-days">{days===1?"1 day overdue":`${days} days overdue`}</span>}
           {tl&&<span className="meta-txt">· {tl}</span>}
+          {subTotal>0&&(
+            <span className="subtask-progress">
+              <span style={{fontSize:10,fontWeight:700,color:subDone===subTotal?"var(--leaf)":"var(--muted)"}}>{subDone}/{subTotal}</span>
+              <span className="subtask-progress-bar"><span className="subtask-progress-fill" style={{width:`${pct}%`}}/></span>
+            </span>
+          )}
           {showProject&&task.project&&accent&&(
             <button className="proj-pill" style={{background:accent.bg,color:accent.dot,border:`1px solid ${accent.border}`}}
               onClick={e=>{e.stopPropagation();onNavigateProject&&onNavigateProject(task.project);}}>
@@ -269,29 +449,103 @@ function TaskRow({ task, onToggle, onEdit, onDelete, showProject, projectAccents
         </div>
       </div>
       <div className="row-actions">
-        <button className="act-btn" onClick={onEdit}>✎</button>
+        <button className="act-btn" onClick={onOpenDetail}>✎</button>
         <button className="act-btn del" onClick={onDelete}>✕</button>
       </div>
     </div>
   );
 }
 
-function TodayView({ tasks, context, projectAccents, onAdd, onEdit, onToggle, onDelete, onNavigateProject, onCtxChange }) {
+// ── Subtask row in Today view ─────────────────────────────────────────────────
+function SubtaskTodayRow({ subtask, parentTitle, onToggle, onOpenParent, urgent }) {
+  const days = urgent ? daysOverdue(subtask.due_date) : 0;
+  return (
+    <div className="subtask-row">
+      <button className={`check-btn small${subtask.archived?" checked":""}${urgent?" urgent":""}`} onClick={onToggle} />
+      <div className="task-body" onClick={onOpenParent}>
+        <div className={`task-title subtask${subtask.archived?" done":""}${urgent?" overdue-title-text":""}`}>{subtask.title}</div>
+        <div className="task-meta">
+          {!urgent&&<span className={`p-indicator ${subtask.priority}`} style={{fontSize:9,padding:"1px 5px"}}>{subtask.priority==="medium"?"Med":subtask.priority}</span>}
+          {urgent&&<span className="overdue-days">{days===1?"1 day overdue":`${days} days overdue`}</span>}
+          <span className="parent-label"><span className="parent-label-arrow">↳</span>{parentTitle}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── TodayView ─────────────────────────────────────────────────────────────────
+function TodayView({ tasks, context, projectAccents, onAdd, onOpenDetail, onToggle, onDelete, onNavigateProject, onCtxChange }) {
   const [showMoreWeek, setShowMoreWeek] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
-  const ctx = tasks.filter(t=>t.context===context);
-  const active = ctx.filter(t=>!t.archived);
-  const overdue = useMemo(()=>sortTasks(active.filter(t=>isOverdue(t.due_date))),[tasks,context]);
-  const dueToday = useMemo(()=>sortTasks(active.filter(t=>isToday(t.due_date))),[tasks,context]);
-  const thisWeek = useMemo(()=>sortTasks(active.filter(t=>t.due_date&&isThisWeek(t.due_date)&&!isToday(t.due_date))),[tasks,context]);
-  const completedToday = useMemo(()=>ctx.filter(t=>t.archived&&t.completed_at&&t.completed_at.slice(0,10)===todayStr())
+
+  // Separate parents and subtasks
+  const allCtx = tasks.filter(t=>t.context===context);
+  const parents = allCtx.filter(t=>!t.parent_id);
+  const subtasksMap = useMemo(()=>{
+    const m={};
+    allCtx.filter(t=>t.parent_id).forEach(s=>{
+      if(!m[s.parent_id]) m[s.parent_id]=[];
+      m[s.parent_id].push(s);
+    });
+    return m;
+  },[tasks,context]);
+
+  const activeParents = parents.filter(t=>!t.archived);
+  const activeSubtasks = allCtx.filter(t=>t.parent_id&&!t.archived);
+
+  // For Today view — include subtasks with due dates in their own sections
+  const overdueParents = useMemo(()=>sortTasks(activeParents.filter(t=>isOverdue(t.due_date))),[tasks,context]);
+  const overdueSubtasks = useMemo(()=>sortTasks(activeSubtasks.filter(t=>isOverdue(t.due_date))),[tasks,context]);
+
+  const dueTodayParents = useMemo(()=>sortTasks(activeParents.filter(t=>isToday(t.due_date))),[tasks,context]);
+  const dueTodaySubtasks = useMemo(()=>sortTasks(activeSubtasks.filter(t=>isToday(t.due_date))),[tasks,context]);
+
+  const thisWeekParents = useMemo(()=>sortTasks(activeParents.filter(t=>t.due_date&&isThisWeek(t.due_date)&&!isToday(t.due_date))),[tasks,context]);
+  const thisWeekSubtasks = useMemo(()=>sortTasks(activeSubtasks.filter(t=>t.due_date&&isThisWeek(t.due_date)&&!isToday(t.due_date))),[tasks,context]);
+
+  const completedToday = useMemo(()=>allCtx.filter(t=>!t.parent_id&&t.archived&&t.completed_at&&t.completed_at.slice(0,10)===todayStr())
     .sort((a,b)=>b.completed_at.localeCompare(a.completed_at)),[tasks,context]);
+
   const doneCount = completedToday.length;
-  const wv = showMoreWeek ? thisWeek : thisWeek.slice(0,3);
-  const wh = thisWeek.length - 3;
+  const totalOverdue = overdueParents.length + overdueSubtasks.length;
+  const todayItems = [...dueTodayParents,...dueTodaySubtasks];
+  const weekItems = [...thisWeekParents,...thisWeekSubtasks];
+  const wv = showMoreWeek ? weekItems : weekItems.slice(0,3);
+  const wh = weekItems.length - 3;
+
   const todayFmt = new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
-  const allClear = overdue.length===0&&dueToday.length===0&&thisWeek.length===0;
+  const activeCount = activeParents.length;
+  const allClear = totalOverdue===0&&todayItems.length===0&&weekItems.length===0;
   const ctxC = CTX[context];
+
+  function getParentTitle(parentId) {
+    const p = tasks.find(t=>t.id===parentId);
+    return p ? p.title : "";
+  }
+
+  function renderItem(t) {
+    if (t.parent_id) {
+      return <SubtaskTodayRow key={t.id} subtask={t} parentTitle={getParentTitle(t.parent_id)}
+        onToggle={()=>onToggle(t.id)}
+        onOpenParent={()=>{const p=tasks.find(x=>x.id===t.parent_id);if(p)onOpenDetail(p);}} />;
+    }
+    return <TaskRow key={t.id} task={t} subtasks={subtasksMap[t.id]||[]} showProject projectAccents={projectAccents}
+      onToggle={()=>onToggle(t.id)} onOpenDetail={()=>onOpenDetail(t)} onDelete={()=>onDelete(t.id)}
+      onNavigateProject={onNavigateProject} />;
+  }
+
+  function renderUrgentItem(t) {
+    if (t.parent_id) {
+      return <SubtaskTodayRow key={t.id} subtask={t} urgent parentTitle={getParentTitle(t.parent_id)}
+        onToggle={()=>onToggle(t.id)}
+        onOpenParent={()=>{const p=tasks.find(x=>x.id===t.parent_id);if(p)onOpenDetail(p);}} />;
+    }
+    return <TaskRow key={t.id} task={t} subtasks={subtasksMap[t.id]||[]} urgent showProject projectAccents={projectAccents}
+      onToggle={()=>onToggle(t.id)} onOpenDetail={()=>onOpenDetail(t)} onDelete={()=>onDelete(t.id)}
+      onNavigateProject={onNavigateProject} />;
+  }
+
   return (
     <>
       <div className="today-header" style={{background:ctxC.bg}}>
@@ -305,7 +559,7 @@ function TodayView({ tasks, context, projectAccents, onAdd, onEdit, onToggle, on
         <div className="header-bottom">
           <div className="date-info">
             <span className="date-label">{todayFmt}</span>
-            {active.length>0&&<span className="date-remaining">{active.length} task{active.length!==1?"s":""} remaining</span>}
+            {activeCount>0&&<span className="date-remaining">{activeCount} task{activeCount!==1?"s":""} remaining</span>}
           </div>
           <div className="header-right">
             {doneCount>0&&<span className={`done-badge${doneCount>0?" has-done":""}`}>{doneCount} done</span>}
@@ -314,23 +568,20 @@ function TodayView({ tasks, context, projectAccents, onAdd, onEdit, onToggle, on
         </div>
       </div>
       <div className="list-wrap">
-        {overdue.length>0&&<div className="overdue-block">
-          <div className="overdue-header"><div className="overdue-icon"/><span className="overdue-title-label">Needs attention</span><span className="overdue-count">{overdue.length}</span></div>
-          {overdue.map(t=><TaskRow key={t.id} task={t} urgent showProject projectAccents={projectAccents}
-            onToggle={()=>onToggle(t.id)} onEdit={()=>onEdit(t)} onDelete={()=>onDelete(t.id)} onNavigateProject={onNavigateProject}/>)}
+        {totalOverdue>0&&<div className="overdue-block">
+          <div className="overdue-header"><div className="overdue-icon"/><span className="overdue-title-label">Needs attention</span><span className="overdue-count">{totalOverdue}</span></div>
+          {[...overdueParents,...overdueSubtasks].map(t=>renderUrgentItem(t))}
         </div>}
-        {dueToday.length>0&&<div className="section-block">
+        {todayItems.length>0&&<div className="section-block">
           <div className="section-header"><span className="section-title">Due today</span></div>
-          {dueToday.map(t=><TaskRow key={t.id} task={t} showProject projectAccents={projectAccents}
-            onToggle={()=>onToggle(t.id)} onEdit={()=>onEdit(t)} onDelete={()=>onDelete(t.id)} onNavigateProject={onNavigateProject}/>)}
+          {todayItems.map(t=>renderItem(t))}
         </div>}
-        {thisWeek.length>0&&<div className="section-block">
+        {weekItems.length>0&&<div className="section-block">
           <div className="section-header">
             <span className="section-title">This week</span>
             {!showMoreWeek&&wh>0&&<button className="section-show-more" onClick={()=>setShowMoreWeek(true)}>+{wh} more</button>}
           </div>
-          {wv.map(t=><TaskRow key={t.id} task={t} showProject projectAccents={projectAccents}
-            onToggle={()=>onToggle(t.id)} onEdit={()=>onEdit(t)} onDelete={()=>onDelete(t.id)} onNavigateProject={onNavigateProject}/>)}
+          {wv.map(t=>renderItem(t))}
           {showMoreWeek&&wh>0&&<button className="section-show-more" style={{padding:"8px 0",display:"block"}} onClick={()=>setShowMoreWeek(false)}>Show less</button>}
         </div>}
         {allClear&&<div className="empty-today">
@@ -342,16 +593,17 @@ function TodayView({ tasks, context, projectAccents, onAdd, onEdit, onToggle, on
           <div className="arch-toggle" onClick={()=>setShowCompleted(v=>!v)}>
             <span>{showCompleted?"▾":"▸"}</span> Completed today ({doneCount})
           </div>
-          {showCompleted&&completedToday.map(t=><TaskRow key={t.id} task={t} showProject projectAccents={projectAccents}
-            onToggle={()=>onToggle(t.id)} onEdit={()=>onEdit(t)} onDelete={()=>onDelete(t.id)} onNavigateProject={onNavigateProject}/>)}
+          {showCompleted&&completedToday.map(t=><TaskRow key={t.id} task={t} subtasks={subtasksMap[t.id]||[]} showProject projectAccents={projectAccents}
+            onToggle={()=>onToggle(t.id)} onOpenDetail={()=>onOpenDetail(t)} onDelete={()=>onDelete(t.id)} onNavigateProject={onNavigateProject}/>)}
         </div>}
       </div>
     </>
   );
 }
 
-function ProjectsView({ tasks, context, projectAccents, onAdd, onSelectProject, onCtxChange, onEdit, onToggle, onDelete }) {
-  const ctxTasks = tasks.filter(t=>t.context===context);
+// ── ProjectsView ──────────────────────────────────────────────────────────────
+function ProjectsView({ tasks, context, projectAccents, onAdd, onSelectProject, onCtxChange, onOpenDetail, onToggle, onDelete }) {
+  const ctxTasks = tasks.filter(t=>t.context===context&&!t.parent_id);
   const projects = useMemo(()=>{
     const map={};
     ctxTasks.filter(t=>t.project).forEach(t=>{
@@ -364,6 +616,12 @@ function ProjectsView({ tasks, context, projectAccents, onAdd, onSelectProject, 
   },[tasks,context]);
   const noProject = useMemo(()=>sortTasks(ctxTasks.filter(t=>!t.project&&!t.archived)),[tasks,context]);
   const ctxC = CTX[context];
+  const subtasksMap = useMemo(()=>{
+    const m={};
+    tasks.filter(t=>t.parent_id).forEach(s=>{if(!m[s.parent_id])m[s.parent_id]=[];m[s.parent_id].push(s);});
+    return m;
+  },[tasks]);
+
   return (
     <>
       <div className="plain-header">
@@ -404,7 +662,8 @@ function ProjectsView({ tasks, context, projectAccents, onAdd, onSelectProject, 
             </>}
             {noProject.length>0&&<div className="solo-section">
               <div className="solo-label">No project</div>
-              {noProject.map(t=><TaskRow key={t.id} task={t} showProject={false} onToggle={()=>onToggle(t.id)} onEdit={()=>onEdit(t)} onDelete={()=>onDelete(t.id)}/>)}
+              {noProject.map(t=><TaskRow key={t.id} task={t} subtasks={subtasksMap[t.id]||[]} showProject={false}
+                onToggle={()=>onToggle(t.id)} onOpenDetail={()=>onOpenDetail(t)} onDelete={()=>onDelete(t.id)}/>)}
             </div>}
           </>}
       </div>
@@ -412,12 +671,18 @@ function ProjectsView({ tasks, context, projectAccents, onAdd, onSelectProject, 
   );
 }
 
-function ProjectDetailView({ projectName, tasks, context, projectAccents, onBack, onAdd, onEdit, onToggle, onDelete }) {
+// ── ProjectDetailView ─────────────────────────────────────────────────────────
+function ProjectDetailView({ projectName, tasks, context, projectAccents, onBack, onAdd, onOpenDetail, onToggle, onDelete }) {
   const [showArchived, setShowArchived] = useState(false);
   const accent = projectAccents[projectName];
   const ctxC = CTX[context];
-  const active = useMemo(()=>sortTasks(tasks.filter(t=>t.project===projectName&&t.context===context&&!t.archived)),[tasks,projectName,context]);
-  const archived = useMemo(()=>tasks.filter(t=>t.project===projectName&&t.context===context&&t.archived)
+  const subtasksMap = useMemo(()=>{
+    const m={};
+    tasks.filter(t=>t.parent_id).forEach(s=>{if(!m[s.parent_id])m[s.parent_id]=[];m[s.parent_id].push(s);});
+    return m;
+  },[tasks]);
+  const active = useMemo(()=>sortTasks(tasks.filter(t=>t.project===projectName&&t.context===context&&!t.archived&&!t.parent_id)),[tasks,projectName,context]);
+  const archived = useMemo(()=>tasks.filter(t=>t.project===projectName&&t.context===context&&t.archived&&!t.parent_id)
     .sort((a,b)=>(b.completed_at||"").localeCompare(a.completed_at||"")),[tasks,projectName,context]);
   return (
     <>
@@ -431,28 +696,30 @@ function ProjectDetailView({ projectName, tasks, context, projectAccents, onBack
       </div>
       <div className="list-wrap" style={{padding:`0 20px calc(var(--tab-h) + env(safe-area-inset-bottom) + 16px)`}}>
         {active.length===0?<div className="empty">No active tasks in this project.</div>
-          :active.map(t=><TaskRow key={t.id} task={t} showProject={false}
-              onToggle={()=>onToggle(t.id)} onEdit={()=>onEdit(t)} onDelete={()=>onDelete(t.id)}/>)}
+          :active.map(t=><TaskRow key={t.id} task={t} subtasks={subtasksMap[t.id]||[]} showProject={false}
+              onToggle={()=>onToggle(t.id)} onOpenDetail={()=>onOpenDetail(t)} onDelete={()=>onDelete(t.id)}/>)}
         {archived.length>0&&<>
           <div className="arch-toggle" onClick={()=>setShowArchived(v=>!v)}>
             <span>{showArchived?"▾":"▸"}</span> Completed ({archived.length})
           </div>
-          {showArchived&&archived.map(t=><TaskRow key={t.id} task={t} showProject={false}
-            onToggle={()=>onToggle(t.id)} onEdit={()=>onEdit(t)} onDelete={()=>onDelete(t.id)}/>)}
+          {showArchived&&archived.map(t=><TaskRow key={t.id} task={t} subtasks={subtasksMap[t.id]||[]} showProject={false}
+            onToggle={()=>onToggle(t.id)} onOpenDetail={()=>onOpenDetail(t)} onDelete={()=>onDelete(t.id)}/>)}
         </>}
       </div>
     </>
   );
 }
 
+// ── Root ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const [tasks, setTasks] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [context, setContext] = useState("orinoco");
   const [tab, setTab] = useState("today");
   const [selectedProject, setSelectedProject] = useState(null);
-  const [modal, setModal] = useState(null);
+  const [modal, setModal] = useState(null); // 'form' | 'detail'
   const [editTarget, setEditTarget] = useState(null);
+  const [detailTarget, setDetailTarget] = useState(null);
   const [defaultProject, setDefaultProject] = useState(null);
 
   useEffect(()=>{
@@ -487,11 +754,12 @@ export default function App() {
     return map;
   },[tasks]);
 
-  const hasOverdue = useMemo(()=>tasks.some(t=>!t.archived&&t.context===context&&isOverdue(t.due_date)),[tasks,context]);
+  const hasOverdue = useMemo(()=>tasks.some(t=>!t.archived&&!t.parent_id&&t.context===context&&isOverdue(t.due_date)),[tasks,context]);
 
   function updateTasks(fn) { setTasks(prev=>fn(prev)); }
   function openAdd(proj) { setDefaultProject(proj); setEditTarget(null); setModal("form"); }
-  function openEdit(task) { setEditTarget(task); setDefaultProject(null); setModal("form"); }
+  function openDetail(task) { setDetailTarget(task); setModal("detail"); }
+  function openEdit(task) { setDetailTarget(null); setEditTarget(task); setModal("form"); }
 
   async function handleSave(data) {
     if (editTarget) {
@@ -505,6 +773,27 @@ export default function App() {
     setModal(null); setEditTarget(null); setDefaultProject(null);
   }
 
+  async function handleAddSubtask(parentTask, data) {
+    const st = {
+      id: genId(),
+      title: data.title,
+      priority: data.priority || "medium",
+      due_date: data.due_date || null,
+      estimated_minutes: null,
+      tags: [],
+      project: parentTask.project,
+      context: parentTask.context,
+      parent_id: parentTask.id,
+      completed: false,
+      archived: false,
+      created_at: new Date().toISOString(),
+    };
+    updateTasks(prev=>[...prev, st]);
+    if (supabase) await supabase.from("tasks").insert(st);
+    // Keep detail open and refresh detailTarget
+    setDetailTarget(prev => prev ? {...prev} : prev);
+  }
+
   async function handleToggle(id) {
     const task=tasks.find(t=>t.id===id);
     const changes={completed:!task.archived,archived:!task.archived,completed_at:!task.archived?new Date().toISOString():null};
@@ -513,23 +802,38 @@ export default function App() {
   }
 
   async function handleDelete(id) {
-    updateTasks(prev=>prev.filter(t=>t.id!==id));
-    if (supabase) await supabase.from("tasks").delete().eq("id",id);
+    // Also delete subtasks
+    const subtaskIds = tasks.filter(t=>t.parent_id===id).map(t=>t.id);
+    updateTasks(prev=>prev.filter(t=>t.id!==id&&t.parent_id!==id));
+    if (supabase) {
+      await supabase.from("tasks").delete().eq("id",id);
+      if (subtaskIds.length) await supabase.from("tasks").delete().in("id",subtaskIds);
+    }
   }
 
   function handleCtxChange(c) { setContext(c); setSelectedProject(null); }
   function handleTabChange(t) { setTab(t); setSelectedProject(null); }
   function handleNavigateProject(proj) { setTab("projects"); setSelectedProject(proj); }
 
+  // Get live subtasks for the detail target
+  const detailSubtasks = useMemo(()=>
+    detailTarget ? tasks.filter(t=>t.parent_id===detailTarget.id).sort((a,b)=>a.created_at.localeCompare(b.created_at)) : []
+  ,[tasks, detailTarget]);
+
+  // Get live version of detail target
+  const liveDetailTarget = useMemo(()=>
+    detailTarget ? tasks.find(t=>t.id===detailTarget.id) || detailTarget : null
+  ,[tasks, detailTarget]);
+
   function renderMain() {
     if (tab==="today") return <TodayView tasks={tasks} context={context} projectAccents={projectAccents}
-      onAdd={openAdd} onEdit={openEdit} onToggle={handleToggle} onDelete={handleDelete}
+      onAdd={openAdd} onOpenDetail={openDetail} onToggle={handleToggle} onDelete={handleDelete}
       onNavigateProject={handleNavigateProject} onCtxChange={handleCtxChange}/>;
     if (selectedProject) return <ProjectDetailView projectName={selectedProject} tasks={tasks} context={context} projectAccents={projectAccents}
-      onBack={()=>setSelectedProject(null)} onAdd={openAdd} onEdit={openEdit} onToggle={handleToggle} onDelete={handleDelete}/>;
+      onBack={()=>setSelectedProject(null)} onAdd={openAdd} onOpenDetail={openDetail} onToggle={handleToggle} onDelete={handleDelete}/>;
     return <ProjectsView tasks={tasks} context={context} projectAccents={projectAccents}
       onAdd={openAdd} onSelectProject={setSelectedProject} onCtxChange={handleCtxChange}
-      onEdit={openEdit} onToggle={handleToggle} onDelete={handleDelete}/>;
+      onOpenDetail={openDetail} onToggle={handleToggle} onDelete={handleDelete}/>;
   }
 
   return (
@@ -548,8 +852,21 @@ export default function App() {
             <span className="tab-label">Projects</span>
           </button>
         </div>
+
         {modal==="form"&&<TaskForm task={editTarget} defaultProject={defaultProject} defaultContext={context}
           onSave={handleSave} onCancel={()=>{setModal(null);setEditTarget(null);}}/>}
+
+        {modal==="detail"&&liveDetailTarget&&<TaskDetail
+          task={liveDetailTarget}
+          subtasks={detailSubtasks}
+          onClose={()=>{setModal(null);setDetailTarget(null);}}
+          onEdit={t=>{setModal(null);openEdit(t);}}
+          onToggle={handleToggle}
+          onDelete={handleDelete}
+          onAddSubtask={data=>handleAddSubtask(liveDetailTarget,data)}
+          onToggleSubtask={handleToggle}
+          onDeleteSubtask={handleDelete}
+        />}
       </div>
     </>
   );
