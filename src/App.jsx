@@ -504,13 +504,13 @@ function ExpandableTaskRow({ task, subtasks, onToggle, onOpenDetail, onDelete, o
       {/* Main task row */}
       <div className="task-row" style={{borderBottom:"none"}}>
         <button className={`check-btn${task.archived?" checked":""}`} onClick={()=>onToggle(task.id)} />
-        <div className="task-body" onClick={()=>onOpenDetail(task)}>
-          <div className={`task-title${task.archived?" done":""}`}>{task.title}</div>
+        <div className="task-body" style={{cursor:"default"}}>
+          <div className={`task-title${task.archived?" done":""}`} style={{cursor:"pointer"}} onClick={()=>onOpenDetail(task)}>{task.title}</div>
           <div className="task-meta">
             <span className={`p-indicator ${task.priority}`}>{task.priority==="medium"?"Med":task.priority}</span>
             {task.due_date&&<span className="meta-txt" style={isOverdue(task.due_date)?{color:"var(--overdue-accent)",fontWeight:700}:{}}>{formatDateShort(task.due_date)}</span>}
             {subTotal>0&&(
-              <button className="expand-btn" onClick={e=>{e.stopPropagation();setExpanded(v=>!v);}}>
+              <button className="expand-btn" onClick={()=>setExpanded(v=>!v)}>
                 <span>{expanded?"▾":"▸"}</span>
                 <span style={{color:subDone===subTotal?"var(--leaf)":"var(--muted)"}}>{subDone}/{subTotal}</span>
                 <span className="subtask-progress-bar" style={{display:"inline-block",verticalAlign:"middle"}}>
@@ -519,7 +519,7 @@ function ExpandableTaskRow({ task, subtasks, onToggle, onOpenDetail, onDelete, o
               </button>
             )}
             {subTotal===0&&(
-              <button className="expand-btn" onClick={e=>{e.stopPropagation();setExpanded(v=>!v);setShowForm(true);}}>
+              <button className="expand-btn" onClick={()=>{setExpanded(true);setShowForm(true);}}>
                 + subtask
               </button>
             )}
