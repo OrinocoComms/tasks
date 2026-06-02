@@ -254,6 +254,20 @@ const styles = `
   .subtask-date.overdue{color:var(--overdue-accent);}
   .subtask-form{background:var(--paper);border-radius:var(--radius);padding:12px;margin-top:8px;}
   .subtask-form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
+
+  /* Inline subtask expand in project view */
+  .expand-btn{background:none;border:none;cursor:pointer;font-family:var(--font-sans);font-size:10px;font-weight:700;color:var(--blue);padding:0;letter-spacing:0.03em;display:flex;align-items:center;gap:3px;}
+  .expand-btn:hover{color:var(--blue-deep);}
+  .inline-subtasks{padding-left:32px;border-top:1px solid var(--rule);animation:rowIn 0.18s var(--ease);}
+  .inline-subtask-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--rule);}
+  .inline-subtask-row:last-child{border-bottom:none;}
+  .inline-subtask-body{flex:1;min-width:0;}
+  .inline-subtask-title{font-size:13px;font-weight:500;color:var(--ink);line-height:1.35;}
+  .inline-subtask-title.done{text-decoration:line-through;color:var(--muted);}
+  .inline-subtask-meta{display:flex;gap:5px;align-items:center;margin-top:2px;}
+  .inline-add-subtask{display:flex;align-items:center;gap:6px;padding:8px 0;font-family:var(--font-sans);font-size:12px;font-weight:600;color:var(--blue);background:none;border:none;cursor:pointer;}
+  .inline-add-subtask:hover{color:var(--blue-deep);}
+  .inline-subtask-form{background:var(--paper);border-radius:var(--radius);padding:10px;margin:4px 0 8px;}
 `;
 
 // ── TaskForm ──────────────────────────────────────────────────────────────────
@@ -274,7 +288,7 @@ function TaskForm({ task, defaultProject, defaultContext, onSave, onCancel }) {
   }
   function onKey(e) { if ((e.metaKey||e.ctrlKey)&&e.key==="Enter") submit(); if (e.key==="Escape") onCancel(); }
   const ctxC = CTX[context];
-  const tl = estMins ? (Number(estMins)<60?`${estMins}m`:`${Math.floor(estMins/60)}h${estMins%60?` ${estMins%60}m`:""}`) : null;
+  const tl = estMins ? (Number(estMins)<60 ? estMins+"m" : Math.floor(estMins/60)+"h"+(estMins%60?" "+estMins%60+"m":"")) : null;
   return (
     <div className="overlay" onClick={e=>e.target===e.currentTarget&&onCancel()}>
       <div className="modal" style={{borderTop:`3px solid ${ctxC.bg}`}} onKeyDown={onKey}>
@@ -456,7 +470,118 @@ function TaskRow({ task, subtasks, onToggle, onOpenDetail, onDelete, showProject
   );
 }
 
-// ── Subtask row in Today view ─────────────────────────────────────────────────
+// ── ExpandableTaskRow — used in project detail view ───────────────────────────
+function ExpandableTaskRow({ task, subtasks, onToggle, onOpenDetail, onDelete, onToggleSubtask, onDeleteSubtask, onAddSubtask, ctxC }) {
+  const [expanded, setExpanded] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [stTitle, setStTitle] = useState("");
+  const [stDue, setStDue] = useState("");
+  const [stPriority, setStPriority] = useState("medium");
+  const stRef = useRef();
+  useEffect(() => { if (showForm) stRef.current?.focus(); }, [showForm]);
+
+  const subDone = subtasks.filter(s=>s.archived).length;
+  const subTotal = subtasks.length;
+  const pct = subTotal > 0 ? Math.round((subDone/subTotal)*100) : 0;
+
+  function formatDateShort(s) {
+    if (!s) return null;
+    const d = new Date(s+"T00:00:00"), t = new Date(); t.setHours(0,0,0,0);
+    const diff = Math.round((d-t)/86400000);
+    if (diff===0) return "today"; if (diff===1) return "tomorrow";
+    if (diff<0) return `${Math.abs(diff)}d overdue`;
+    return d.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+  }
+
+  function submitSubtask() {
+    if (!stTitle.trim()) return;
+    onAddSubtask(task, { title: stTitle.trim(), due_date: stDue || null, priority: stPriority });
+    setStTitle(""); setStDue(""); setStPriority("medium"); setShowForm(false);
+  }
+
+  return (
+    <div style={{borderBottom:"1px solid var(--rule)"}}>
+      {/* Main task row */}
+      <div className="task-row" style={{borderBottom:"none"}}>
+        <button className={`check-btn${task.archived?" checked":""}`} onClick={()=>onToggle(task.id)} />
+        <div className="task-body" onClick={()=>onOpenDetail(task)}>
+          <div className={`task-title${task.archived?" done":""}`}>{task.title}</div>
+          <div className="task-meta">
+            <span className={`p-indicator ${task.priority}`}>{task.priority==="medium"?"Med":task.priority}</span>
+            {task.due_date&&<span className="meta-txt" style={isOverdue(task.due_date)?{color:"var(--overdue-accent)",fontWeight:700}:{}}>{formatDateShort(task.due_date)}</span>}
+            {subTotal>0&&(
+              <button className="expand-btn" onClick={e=>{e.stopPropagation();setExpanded(v=>!v);}}>
+                <span>{expanded?"▾":"▸"}</span>
+                <span style={{color:subDone===subTotal?"var(--leaf)":"var(--muted)"}}>{subDone}/{subTotal}</span>
+                <span className="subtask-progress-bar" style={{display:"inline-block",verticalAlign:"middle"}}>
+                  <span className="subtask-progress-fill" style={{width:`${pct}%`,display:"block",height:"100%"}}/>
+                </span>
+              </button>
+            )}
+            {subTotal===0&&(
+              <button className="expand-btn" onClick={e=>{e.stopPropagation();setExpanded(v=>!v);setShowForm(true);}}>
+                + subtask
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="row-actions">
+          <button className="act-btn" onClick={()=>onOpenDetail(task)}>✎</button>
+          <button className="act-btn del" onClick={()=>onDelete(task.id)}>✕</button>
+        </div>
+      </div>
+
+      {/* Inline subtasks */}
+      {expanded && (
+        <div className="inline-subtasks">
+          {subtasks.map(st=>(
+            <div key={st.id} className="inline-subtask-row">
+              <button className={`check-btn small${st.archived?" checked":""}`} onClick={()=>onToggleSubtask(st.id)} />
+              <div className="inline-subtask-body">
+                <div className={`inline-subtask-title${st.archived?" done":""}`}>{st.title}</div>
+                {st.due_date&&(
+                  <div className="inline-subtask-meta">
+                    <span className={`subtask-date${isOverdue(st.due_date)&&!st.archived?" overdue":""}`}>{formatDateShort(st.due_date)}</span>
+                    <span className={`p-indicator ${st.priority}`} style={{fontSize:9,padding:"1px 5px"}}>{st.priority==="medium"?"Med":st.priority}</span>
+                  </div>
+                )}
+              </div>
+              <button className="act-btn del" style={{opacity:1,flexShrink:0}} onClick={()=>onDeleteSubtask(st.id)}>✕</button>
+            </div>
+          ))}
+
+          {!showForm && (
+            <button className="inline-add-subtask" onClick={()=>setShowForm(true)}>+ Add subtask</button>
+          )}
+
+          {showForm && (
+            <div className="inline-subtask-form">
+              <input type="text" ref={stRef} className="field-input" placeholder="Subtask title"
+                value={stTitle} onChange={e=>setStTitle(e.target.value)}
+                onKeyDown={e=>{if(e.key==="Enter")submitSubtask();if(e.key==="Escape")setShowForm(false);}}
+                style={{marginBottom:8}} />
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+                <input type="date" className="field-input" value={stDue} onChange={e=>setStDue(e.target.value)} />
+                <div className="p-opts">
+                  {["high","medium","low"].map(p=>(
+                    <button key={p} type="button" className={`p-opt ${p} ${stPriority===p?"on":""}`}
+                      onClick={()=>setStPriority(p)} style={{fontSize:10,padding:"6px 0"}}>
+                      {p==="medium"?"Med":p[0].toUpperCase()+p.slice(1)}</button>))}
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button className="btn-cancel" style={{padding:"7px 12px",fontSize:12}} onClick={()=>setShowForm(false)}>Cancel</button>
+                <button className="btn-primary" style={{background:ctxC?.bgDeep||"var(--blue-deep)",padding:"7px",fontSize:12}} onClick={submitSubtask} disabled={!stTitle.trim()}>Add</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 function SubtaskTodayRow({ subtask, parentTitle, parentProject, onToggle, onOpenParent, urgent }) {
   const days = urgent ? daysOverdue(subtask.due_date) : 0;
   return (
@@ -677,7 +802,7 @@ function ProjectsView({ tasks, context, projectAccents, onAdd, onSelectProject, 
 }
 
 // ── ProjectDetailView ─────────────────────────────────────────────────────────
-function ProjectDetailView({ projectName, tasks, context, projectAccents, onBack, onAdd, onOpenDetail, onToggle, onDelete }) {
+function ProjectDetailView({ projectName, tasks, context, projectAccents, onBack, onAdd, onOpenDetail, onToggle, onDelete, onToggleSubtask, onDeleteSubtask, onAddSubtask }) {
   const [showArchived, setShowArchived] = useState(false);
   const accent = projectAccents[projectName];
   const ctxC = CTX[context];
@@ -701,8 +826,10 @@ function ProjectDetailView({ projectName, tasks, context, projectAccents, onBack
       </div>
       <div className="list-wrap" style={{padding:`0 20px calc(var(--tab-h) + env(safe-area-inset-bottom) + 16px)`}}>
         {active.length===0?<div className="empty">No active tasks in this project.</div>
-          :active.map(t=><TaskRow key={t.id} task={t} subtasks={subtasksMap[t.id]||[]} showProject={false}
-              onToggle={()=>onToggle(t.id)} onOpenDetail={()=>onOpenDetail(t)} onDelete={()=>onDelete(t.id)}/>)}
+          :active.map(t=><ExpandableTaskRow key={t.id} task={t} subtasks={subtasksMap[t.id]||[]} ctxC={CTX[context]}
+              onToggle={onToggle} onOpenDetail={onOpenDetail} onDelete={onDelete}
+              onToggleSubtask={onToggleSubtask} onDeleteSubtask={onDeleteSubtask}
+              onAddSubtask={onAddSubtask}/>)}
         {archived.length>0&&<>
           <div className="arch-toggle" onClick={()=>setShowArchived(v=>!v)}>
             <span>{showArchived?"▾":"▸"}</span> Completed ({archived.length})
@@ -835,7 +962,8 @@ export default function App() {
       onAdd={openAdd} onOpenDetail={openDetail} onToggle={handleToggle} onDelete={handleDelete}
       onNavigateProject={handleNavigateProject} onCtxChange={handleCtxChange}/>;
     if (selectedProject) return <ProjectDetailView projectName={selectedProject} tasks={tasks} context={context} projectAccents={projectAccents}
-      onBack={()=>setSelectedProject(null)} onAdd={openAdd} onOpenDetail={openDetail} onToggle={handleToggle} onDelete={handleDelete}/>;
+      onBack={()=>setSelectedProject(null)} onAdd={openAdd} onOpenDetail={openDetail} onToggle={handleToggle} onDelete={handleDelete}
+      onToggleSubtask={handleToggle} onDeleteSubtask={handleDelete} onAddSubtask={handleAddSubtask}/>;
     return <ProjectsView tasks={tasks} context={context} projectAccents={projectAccents}
       onAdd={openAdd} onSelectProject={setSelectedProject} onCtxChange={handleCtxChange}
       onOpenDetail={openDetail} onToggle={handleToggle} onDelete={handleDelete}/>;
