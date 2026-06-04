@@ -332,7 +332,71 @@ function TaskForm({ task, defaultProject, defaultContext, onSave, onCancel }) {
 }
 
 // ── Task Detail Modal (with subtasks) ─────────────────────────────────────────
-function TaskDetail({ task, subtasks, onClose, onEdit, onToggle, onDelete, onAddSubtask, onToggleSubtask, onDeleteSubtask }) {
+function SubtaskEditRow({ st, index, total, onToggle, onDelete, onUpdate, onMove, ctxC }) {
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(st.title);
+  const [due, setDue] = useState(st.due_date || "");
+  const [priority, setPriority] = useState(st.priority || "medium");
+  const editRef = useRef();
+
+  useEffect(() => { if (editing) editRef.current?.focus(); }, [editing]);
+
+  function formatDateShort(s) {
+    if (!s) return null;
+    const d = new Date(s+"T00:00:00"), t = new Date(); t.setHours(0,0,0,0);
+    const diff = Math.round((d-t)/86400000);
+    if (diff===0) return "today"; if (diff===1) return "tomorrow";
+    if (diff<0) return `${Math.abs(diff)}d overdue`;
+    return d.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+  }
+
+  function saveEdit() {
+    if (!title.trim()) return;
+    onUpdate(st.id, { title: title.trim(), due_date: due || null, priority });
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <div className="subtask-item" style={{flexDirection:"column",alignItems:"stretch",gap:8,background:"var(--paper)",borderRadius:"var(--radius)",padding:"10px"}}>
+        <input type="text" ref={editRef} className="field-input" value={title} onChange={e=>setTitle(e.target.value)}
+          onKeyDown={e=>{if(e.key==="Enter")saveEdit();if(e.key==="Escape")setEditing(false);}} />
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          <input type="date" className="field-input" value={due} onChange={e=>setDue(e.target.value)} />
+          <div className="p-opts">
+            {["high","medium","low"].map(p=>(
+              <button key={p} type="button" className={`p-opt ${p} ${priority===p?"on":""}`} onClick={()=>setPriority(p)} style={{fontSize:10,padding:"5px 0"}}>
+                {p==="medium"?"Med":p[0].toUpperCase()+p.slice(1)}</button>))}
+          </div>
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <button className="btn-cancel" style={{padding:"7px 12px",fontSize:12}} onClick={()=>setEditing(false)}>Cancel</button>
+          <button className="btn-primary" style={{background:ctxC?.bgDeep||"var(--blue-deep)",padding:"7px",fontSize:12,flex:1}} onClick={saveEdit} disabled={!title.trim()}>Save</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="subtask-item">
+      <button className={`check-btn small${st.archived?" checked":""}`} onClick={()=>onToggle(st.id)} />
+      <div className="subtask-item-body" style={{cursor:"pointer"}} onClick={()=>setEditing(true)}>
+        <div className={`subtask-item-title${st.archived?" done":""}`}>{st.title}</div>
+        <div className="subtask-item-meta">
+          {st.due_date && <span className={`subtask-date${isOverdue(st.due_date)&&!st.archived?" overdue":""}`}>{formatDateShort(st.due_date)}</span>}
+          <span className={`p-indicator ${st.priority}`} style={{fontSize:9,padding:"1px 5px"}}>{st.priority==="medium"?"Med":st.priority}</span>
+        </div>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:2,flexShrink:0}}>
+        <button className="act-btn" style={{opacity:index===0?0.25:1,fontSize:11,height:20}} disabled={index===0} onClick={()=>onMove(index,-1)}>↑</button>
+        <button className="act-btn" style={{opacity:index===total-1?0.25:1,fontSize:11,height:20}} disabled={index===total-1} onClick={()=>onMove(index,1)}>↓</button>
+      </div>
+      <button className="act-btn del" style={{opacity:1}} onClick={()=>onDelete(st.id)}>✕</button>
+    </div>
+  );
+}
+
+function TaskDetail({ task, subtasks, onClose, onEdit, onToggle, onDelete, onAddSubtask, onToggleSubtask, onDeleteSubtask, onUpdateSubtask, onReorderSubtasks }) {
   const [showSubtaskForm, setShowSubtaskForm] = useState(false);
   const [stTitle, setStTitle] = useState("");
   const [stDue, setStDue] = useState("");
@@ -341,14 +405,26 @@ function TaskDetail({ task, subtasks, onClose, onEdit, onToggle, onDelete, onAdd
 
   useEffect(() => { if (showSubtaskForm) stRef.current?.focus(); }, [showSubtaskForm]);
 
+  // Local ordered list of subtasks
+  const [ordered, setOrdered] = useState(subtasks);
+  useEffect(() => { setOrdered(subtasks); }, [subtasks]);
+
+  function moveSubtask(index, dir) {
+    const newOrder = [...ordered];
+    const [item] = newOrder.splice(index, 1);
+    newOrder.splice(index + dir, 0, item);
+    setOrdered(newOrder);
+    onReorderSubtasks(newOrder.map(s => s.id));
+  }
+
   function submitSubtask() {
     if (!stTitle.trim()) return;
     onAddSubtask({ title: stTitle.trim(), due_date: stDue || null, priority: stPriority });
     setStTitle(""); setStDue(""); setStPriority("medium"); setShowSubtaskForm(false);
   }
 
-  const doneCount = subtasks.filter(s => s.archived).length;
-  const totalCount = subtasks.length;
+  const doneCount = ordered.filter(s => s.archived).length;
+  const totalCount = ordered.length;
   const ctxC = CTX[task.context] || CTX.orinoco;
 
   function formatDateShort(s) {
@@ -365,7 +441,6 @@ function TaskDetail({ task, subtasks, onClose, onEdit, onToggle, onDelete, onAdd
       <div className="modal" style={{borderTop:`3px solid ${ctxC.bg}`}}>
         <div className="modal-head">Task detail</div>
 
-        {/* Task title + actions */}
         <div style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:16}}>
           <button className={`check-btn${task.archived?" checked":""}`} style={{marginTop:2,flexShrink:0}} onClick={()=>onToggle(task.id)} />
           <div style={{flex:1}}>
@@ -384,7 +459,6 @@ function TaskDetail({ task, subtasks, onClose, onEdit, onToggle, onDelete, onAdd
           <button className="btn-cancel" style={{color:"var(--high)",borderColor:"rgba(192,57,43,0.2)"}} onClick={()=>{onDelete(task.id);onClose();}}>Delete</button>
         </div>
 
-        {/* Subtasks */}
         <div className="subtasks-section">
           <div className="subtasks-head">
             <span className="subtasks-title">
@@ -393,20 +467,12 @@ function TaskDetail({ task, subtasks, onClose, onEdit, onToggle, onDelete, onAdd
             {!showSubtaskForm && <button className="btn-add-subtask" onClick={()=>setShowSubtaskForm(true)}>+ Add subtask</button>}
           </div>
 
-          {subtasks.map(st => (
-            <div key={st.id} className="subtask-item">
-              <button className={`check-btn small${st.archived?" checked":""}`} onClick={()=>onToggleSubtask(st.id)} />
-              <div className="subtask-item-body">
-                <div className={`subtask-item-title${st.archived?" done":""}`}>{st.title}</div>
-                {st.due_date && (
-                  <div className="subtask-item-meta">
-                    <span className={`subtask-date${isOverdue(st.due_date)&&!st.archived?" overdue":""}`}>{formatDateShort(st.due_date)}</span>
-                    <span className={`p-indicator ${st.priority}`} style={{fontSize:9,padding:"1px 5px"}}>{st.priority==="medium"?"Med":st.priority}</span>
-                  </div>
-                )}
-              </div>
-              <button className="act-btn del" style={{opacity:1}} onClick={()=>onDeleteSubtask(st.id)}>✕</button>
-            </div>
+          {ordered.map((st, i) => (
+            <SubtaskEditRow key={st.id} st={st} index={i} total={ordered.length} ctxC={ctxC}
+              onToggle={onToggleSubtask}
+              onDelete={onDeleteSubtask}
+              onUpdate={onUpdateSubtask}
+              onMove={moveSubtask} />
           ))}
 
           {totalCount === 0 && !showSubtaskForm && (
@@ -968,13 +1034,28 @@ export default function App() {
     }
   }
 
+  async function handleUpdateSubtask(id, data) {
+    updateTasks(prev=>prev.map(t=>t.id===id?{...t,...data}:t));
+    if (supabase) await supabase.from("tasks").update(data).eq("id",id);
+  }
+
+  async function handleReorderSubtasks(orderedIds) {
+    const orderMap = {};
+    orderedIds.forEach((id,i)=>{ orderMap[id]=i; });
+    updateTasks(prev=>prev.map(t=>t.id in orderMap?{...t,sort_order:orderMap[t.id]}:t));
+    if (supabase) {
+      await Promise.all(orderedIds.map((id,i)=>supabase.from("tasks").update({sort_order:i}).eq("id",id)));
+    }
+  }
+
   function handleCtxChange(c) { setContext(c); setSelectedProject(null); }
   function handleTabChange(t) { setTab(t); setSelectedProject(null); }
   function handleNavigateProject(proj) { setTab("projects"); setSelectedProject(proj); }
 
-  // Get live subtasks for the detail target
+  // Get live subtasks for the detail target, sorted by sort_order then created_at
   const detailSubtasks = useMemo(()=>
-    detailTarget ? tasks.filter(t=>t.parent_id===detailTarget.id).sort((a,b)=>a.created_at.localeCompare(b.created_at)) : []
+    detailTarget ? tasks.filter(t=>t.parent_id===detailTarget.id)
+      .sort((a,b)=>(a.sort_order??999)-(b.sort_order??999)||(a.created_at.localeCompare(b.created_at))) : []
   ,[tasks, detailTarget]);
 
   // Get live version of detail target
@@ -1024,6 +1105,8 @@ export default function App() {
           onAddSubtask={data=>handleAddSubtask(liveDetailTarget,data)}
           onToggleSubtask={handleToggle}
           onDeleteSubtask={handleDelete}
+          onUpdateSubtask={handleUpdateSubtask}
+          onReorderSubtasks={handleReorderSubtasks}
         />}
       </div>
     </>
