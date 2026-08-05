@@ -202,6 +202,27 @@ const styles = `
   .proj-tile-bar{height:3px;background:var(--rule);border-radius:2px;overflow:hidden;}
   .proj-tile-bar-fill{height:100%;border-radius:2px;transition:width 0.5s var(--ease);}
   .proj-overdue{position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--overdue-text);background:var(--high-bg);padding:2px 6px;border-radius:var(--radius-pill);}
+
+  /* Project autocomplete */
+  .proj-suggestions{position:absolute;top:100%;left:0;right:0;background:var(--white);border:1px solid var(--border2, #3a3a37);border-radius:var(--radius);box-shadow:var(--shadow-2);z-index:400;overflow:hidden;margin-top:2px;}
+  .proj-suggestion-item{display:block;width:100%;text-align:left;padding:10px 12px;font-family:var(--font-sans);font-size:13px;font-weight:500;color:var(--ink);background:transparent;border:none;border-bottom:1px solid var(--rule);cursor:pointer;transition:background 0.12s;}
+  .proj-suggestion-item:last-child{border-bottom:none;}
+  .proj-suggestion-item:hover{background:var(--blue-pale);}
+
+  /* Project archive */
+  .proj-tile-menu{position:absolute;top:10px;right:10px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:16px;transition:all 0.14s;z-index:2;}
+  .proj-tile-menu:hover{background:var(--rule);color:var(--ink);}
+  .proj-tile-menu-dropdown{position:absolute;top:32px;right:8px;background:var(--white);border:1px solid var(--rule-med);border-radius:var(--radius);box-shadow:var(--shadow-2);z-index:10;overflow:hidden;min-width:140px;}
+  .proj-tile-menu-item{display:block;width:100%;text-align:left;padding:10px 14px;font-family:var(--font-sans);font-size:12px;font-weight:600;color:var(--ink);background:transparent;border:none;border-bottom:1px solid var(--rule);cursor:pointer;transition:background 0.12s;}
+  .proj-tile-menu-item:last-child{border-bottom:none;}
+  .proj-tile-menu-item:hover{background:var(--blue-pale);}
+  .proj-tile-menu-item.danger{color:var(--high);}
+  .proj-tile-menu-item.danger:hover{background:var(--high-bg);}
+  .archived-projects-section{margin-top:28px;}
+  .archived-projects-toggle{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-sans);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);cursor:pointer;user-select:none;padding:4px 0 12px;transition:color 0.14s;}
+  .archived-projects-toggle:hover{color:var(--ink-soft);}
+  .proj-tile.archived-tile{opacity:0.6;filter:grayscale(0.4);}
+  .proj-tile.archived-tile:hover{opacity:0.85;filter:grayscale(0.2);}
   .solo-section{margin-top:24px;}
   .solo-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;padding-bottom:8px;border-bottom:1px solid var(--rule);}
 
@@ -278,24 +299,29 @@ const styles = `
 `;
 
 // ── TaskForm ──────────────────────────────────────────────────────────────────
-function TaskForm({ task, defaultProject, defaultContext, onSave, onCancel }) {
+function TaskForm({ task, defaultProject, defaultContext, onSave, onCancel, allProjects }) {
   const [title, setTitle] = useState(task?.title || "");
   const [priority, setPriority] = useState(task?.priority || "medium");
   const [context, setContext] = useState(task?.context || defaultContext || "orinoco");
   const [dueDate, setDueDate] = useState(task?.due_date || "");
-  const [estMins, setEstMins] = useState(task?.estimated_minutes || "");
   const [project, setProject] = useState(task?.project || defaultProject || "");
-  const [tagsInput, setTagsInput] = useState((task?.tags || []).join(", "));
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const ref = useRef();
   useEffect(() => { ref.current?.focus(); }, []);
+
+  const suggestions = useMemo(() => {
+    if (!project.trim()) return [];
+    return allProjects.filter(p =>
+      p.toLowerCase().includes(project.toLowerCase()) && p !== project
+    ).slice(0, 5);
+  }, [project, allProjects]);
+
   function submit() {
     if (!title.trim()) return;
-    const tags = tagsInput.split(",").map(t => t.trim()).filter(Boolean);
-    onSave({ title:title.trim(), priority, context, due_date:dueDate||null, estimated_minutes:estMins?parseInt(estMins):null, project:project.trim()||null, tags, parent_id:null });
+    onSave({ title:title.trim(), priority, context, due_date:dueDate||null, estimated_minutes:null, project:project.trim()||null, tags:[], parent_id:null });
   }
   function onKey(e) { if ((e.metaKey||e.ctrlKey)&&e.key==="Enter") submit(); if (e.key==="Escape") onCancel(); }
   const ctxC = CTX[context];
-  const tl = estMins ? (Number(estMins)<60 ? estMins+"m" : Math.floor(estMins/60)+"h"+(estMins%60?" "+estMins%60+"m":"")) : null;
   return (
     <div className="overlay" onClick={e=>e.target===e.currentTarget&&onCancel()}>
       <div className="modal" style={{borderTop:`3px solid ${ctxC.bg}`}} onKeyDown={onKey}>
@@ -312,16 +338,26 @@ function TaskForm({ task, defaultProject, defaultContext, onSave, onCancel }) {
               <button key={c} type="button" className={`ctx-opt ${c} ${context===c?"on":""}`} onClick={()=>setContext(c)}>
                 {c==="orinoco"?"Orinoco":"Personal"}</button>))}</div></div>
         </div>
-        <div className="field"><label className="field-label">Project</label>
-          <input type="text" className="field-input" placeholder="Leave blank if none" value={project} onChange={e=>setProject(e.target.value)} /></div>
-        <div className="two-col">
-          <div className="field"><label className="field-label">Due date</label>
-            <input type="date" className="field-input" value={dueDate} onChange={e=>setDueDate(e.target.value)} /></div>
-          <div className="field"><label className="field-label">Est. mins{tl&&<span style={{color:"var(--blue)",fontWeight:600,letterSpacing:0,textTransform:"none"}}> ({tl})</span>}</label>
-            <input type="number" className="field-input" placeholder="30" min="1" value={estMins} onChange={e=>setEstMins(e.target.value)} /></div>
+        <div className="field" style={{position:"relative"}}>
+          <label className="field-label">Project</label>
+          <input type="text" className="field-input" placeholder="Leave blank if none"
+            value={project}
+            onChange={e=>{ setProject(e.target.value); setShowSuggestions(true); }}
+            onFocus={()=>setShowSuggestions(true)}
+            onBlur={()=>setTimeout(()=>setShowSuggestions(false),150)}
+          />
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="proj-suggestions">
+              {suggestions.map(s => (
+                <button key={s} className="proj-suggestion-item" onMouseDown={()=>{ setProject(s); setShowSuggestions(false); }}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        <div className="field"><label className="field-label">Tags</label>
-          <input type="text" className="field-input" placeholder="admin, finance, urgent" value={tagsInput} onChange={e=>setTagsInput(e.target.value)} /></div>
+        <div className="field"><label className="field-label">Due date</label>
+          <input type="date" className="field-input" value={dueDate} onChange={e=>setDueDate(e.target.value)} /></div>
         <div className="modal-actions">
           <button className="btn-cancel" onClick={onCancel}>Cancel</button>
           <button className="btn-primary" style={{background:ctxC.bgDeep}} onClick={submit} disabled={!title.trim()}>{task?"Save changes":"Add task"}</button>
@@ -506,7 +542,6 @@ function TaskDetail({ task, subtasks, onClose, onEdit, onToggle, onDelete, onAdd
 
 // ── TaskRow ───────────────────────────────────────────────────────────────────
 function TaskRow({ task, subtasks, onToggle, onOpenDetail, onDelete, showProject, projectAccents, onNavigateProject, urgent }) {
-  const tl = formatTime(task.estimated_minutes);
   const accent = task.project&&projectAccents ? projectAccents[task.project] : null;
   const days = urgent ? daysOverdue(task.due_date) : 0;
   const subDone = (subtasks||[]).filter(s=>s.archived).length;
@@ -521,7 +556,6 @@ function TaskRow({ task, subtasks, onToggle, onOpenDetail, onDelete, showProject
         <div className="task-meta">
           {!urgent&&<span className={`p-indicator ${task.priority}`}>{task.priority==="medium"?"Med":task.priority}</span>}
           {urgent&&<span className="overdue-days">{days===1?"1 day overdue":`${days} days overdue`}</span>}
-          {tl&&<span className="meta-txt">· {tl}</span>}
           {subTotal>0&&(
             <span className="subtask-progress">
               <span style={{fontSize:10,fontWeight:700,color:subDone===subTotal?"var(--leaf)":"var(--muted)"}}>{subDone}/{subTotal}</span>
@@ -532,7 +566,6 @@ function TaskRow({ task, subtasks, onToggle, onOpenDetail, onDelete, showProject
             <button className="proj-pill" style={{background:accent.bg,color:accent.dot,border:`1px solid ${accent.border}`}}
               onClick={e=>{e.stopPropagation();onNavigateProject&&onNavigateProject(task.project);}}>
               {task.project}</button>)}
-          {(task.tags||[]).map(t=><span key={t} className="tag-chip">#{t}</span>)}
         </div>
       </div>
       <div className="row-actions">
@@ -658,16 +691,16 @@ function ExpandableTaskRow({ task, subtasks, onToggle, onOpenDetail, onDelete, o
 function SubtaskTodayRow({ subtask, parentTitle, parentProject, onToggle, onOpenParent, urgent }) {
   const days = urgent ? daysOverdue(subtask.due_date) : 0;
   return (
-    <div className="subtask-row">
-      <button className={`check-btn small${subtask.archived?" checked":""}${urgent?" urgent":""}`} onClick={onToggle} />
+    <div className="task-row">
+      <button className={`check-btn${subtask.archived?" checked":""}${urgent?" urgent":""}`} onClick={onToggle} />
       <div className="task-body" onClick={onOpenParent}>
-        <div className={`task-title subtask${subtask.archived?" done":""}${urgent?" overdue-title-text":""}`}>{subtask.title}</div>
+        <div className={`task-title${subtask.archived?" done":""}${urgent?" overdue-title-text":""}`}>{subtask.title}</div>
         <div className="task-meta">
-          {!urgent&&<span className={`p-indicator ${subtask.priority}`} style={{fontSize:9,padding:"1px 5px"}}>{subtask.priority==="medium"?"Med":subtask.priority}</span>}
+          {!urgent&&<span className={`p-indicator ${subtask.priority}`}>{subtask.priority==="medium"?"Med":subtask.priority}</span>}
           {urgent&&<span className="overdue-days">{days===1?"1 day overdue":`${days} days overdue`}</span>}
           <span className="parent-label">
             <span className="parent-label-arrow">↳</span>
-            {parentProject && <span style={{color:"var(--blue)",fontWeight:700}}>{parentProject} · </span>}
+            {parentProject&&<span style={{color:"var(--blue)",fontWeight:700}}>{parentProject} · </span>}
             {parentTitle}
           </span>
         </div>
@@ -823,9 +856,47 @@ function TodayView({ tasks, context, projectAccents, onAdd, onOpenDetail, onTogg
 }
 
 // ── ProjectsView ──────────────────────────────────────────────────────────────
+const ARCHIVED_PROJECTS_KEY = "archived_projects";
+function loadArchivedProjects() { try { return JSON.parse(localStorage.getItem(ARCHIVED_PROJECTS_KEY)||"[]"); } catch { return []; } }
+function saveArchivedProjects(list) { localStorage.setItem(ARCHIVED_PROJECTS_KEY, JSON.stringify(list)); }
+
+function ProjectTile({ p, accent, onSelect, onArchive, onDelete, isArchived }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const active = p.total - p.done;
+  const pct = p.total > 0 ? Math.round((p.done/p.total)*100) : 0;
+  return (
+    <div className={`proj-tile${isArchived?" archived-tile":""}`} style={{"--tile-accent":accent.dot}} onClick={()=>{ if(!menuOpen) onSelect(p.name); }}>
+      {p.overdue>0&&!isArchived&&<div className="proj-overdue">{p.overdue} overdue</div>}
+      {/* ⋯ menu */}
+      <button className="proj-tile-menu" onClick={e=>{e.stopPropagation();setMenuOpen(v=>!v);}}>⋯</button>
+      {menuOpen && (
+        <div className="proj-tile-menu-dropdown" onClick={e=>e.stopPropagation()}>
+          {isArchived ? (
+            <>
+              <button className="proj-tile-menu-item" onClick={()=>{onArchive(p.name,false);setMenuOpen(false);}}>Restore project</button>
+              <button className="proj-tile-menu-item danger" onClick={()=>{if(window.confirm("Delete all tasks in this project permanently?"))onDelete(p.name);setMenuOpen(false);}}>Delete all tasks</button>
+            </>
+          ) : (
+            <button className="proj-tile-menu-item" onClick={()=>{onArchive(p.name,true);setMenuOpen(false);}}>Archive project</button>
+          )}
+        </div>
+      )}
+      <div className="proj-tile-name" style={{paddingRight:28}}>{p.name}</div>
+      <div className="proj-tile-stats">
+        <div className="proj-tile-stat"><strong>{active}</strong>active</div>
+        <div className="proj-tile-stat"><strong>{p.done}</strong>done</div>
+      </div>
+      <div className="proj-tile-bar"><div className="proj-tile-bar-fill" style={{width:`${pct}%`,background:accent.dot}}/></div>
+    </div>
+  );
+}
+
 function ProjectsView({ tasks, context, projectAccents, onAdd, onSelectProject, onCtxChange, onOpenDetail, onToggle, onDelete }) {
+  const [archivedProjects, setArchivedProjects] = useState(loadArchivedProjects);
+  const [showArchived, setShowArchived] = useState(false);
+
   const ctxTasks = tasks.filter(t=>t.context===context&&!t.parent_id);
-  const projects = useMemo(()=>{
+  const allProjectData = useMemo(()=>{
     const map={};
     ctxTasks.filter(t=>t.project).forEach(t=>{
       if(!map[t.project]) map[t.project]={name:t.project,total:0,done:0,overdue:0};
@@ -835,6 +906,9 @@ function ProjectsView({ tasks, context, projectAccents, onAdd, onSelectProject, 
     });
     return Object.values(map).sort((a,b)=>a.name.localeCompare(b.name));
   },[tasks,context]);
+
+  const activeProjects = allProjectData.filter(p=>!archivedProjects.includes(p.name));
+  const archivedProjectData = allProjectData.filter(p=>archivedProjects.includes(p.name));
   const noProject = useMemo(()=>sortTasks(ctxTasks.filter(t=>!t.project&&!t.archived)),[tasks,context]);
   const ctxC = CTX[context];
   const subtasksMap = useMemo(()=>{
@@ -842,6 +916,20 @@ function ProjectsView({ tasks, context, projectAccents, onAdd, onSelectProject, 
     tasks.filter(t=>t.parent_id).forEach(s=>{if(!m[s.parent_id])m[s.parent_id]=[];m[s.parent_id].push(s);});
     return m;
   },[tasks]);
+
+  function handleArchive(name, archive) {
+    const updated = archive
+      ? [...archivedProjects, name]
+      : archivedProjects.filter(p=>p!==name);
+    setArchivedProjects(updated);
+    saveArchivedProjects(updated);
+  }
+
+  function handleDeleteProject(name) {
+    const ids = tasks.filter(t=>t.project===name&&t.context===context).map(t=>t.id);
+    ids.forEach(id=>onDelete(id));
+    handleArchive(name, false);
+  }
 
   return (
     <>
@@ -859,25 +947,16 @@ function ProjectsView({ tasks, context, projectAccents, onAdd, onSelectProject, 
         </div>
       </div>
       <div className="projects-wrap">
-        {projects.length===0&&noProject.length===0
+        {activeProjects.length===0&&noProject.length===0&&archivedProjectData.length===0
           ? <div className="empty">No projects in this context yet.</div>
           : <>
-            {projects.length>0&&<>
+            {activeProjects.length>0&&<>
               <div className="projects-eyebrow">Active projects</div>
               <div className="projects-grid">
-                {projects.map(p=>{
+                {activeProjects.map(p=>{
                   const accent=projectAccents[p.name]||PROJ_ACCENTS[0];
-                  const active=p.total-p.done;
-                  const pct=p.total>0?Math.round((p.done/p.total)*100):0;
-                  return <div key={p.name} className="proj-tile" style={{"--tile-accent":accent.dot}} onClick={()=>onSelectProject(p.name)}>
-                    {p.overdue>0&&<div className="proj-overdue">{p.overdue} overdue</div>}
-                    <div className="proj-tile-name">{p.name}</div>
-                    <div className="proj-tile-stats">
-                      <div className="proj-tile-stat"><strong>{active}</strong>active</div>
-                      <div className="proj-tile-stat"><strong>{p.done}</strong>done</div>
-                    </div>
-                    <div className="proj-tile-bar"><div className="proj-tile-bar-fill" style={{width:`${pct}%`,background:accent.dot}}/></div>
-                  </div>;
+                  return <ProjectTile key={p.name} p={p} accent={accent} isArchived={false}
+                    onSelect={onSelectProject} onArchive={handleArchive} onDelete={handleDeleteProject}/>;
                 })}
               </div>
             </>}
@@ -886,6 +965,20 @@ function ProjectsView({ tasks, context, projectAccents, onAdd, onSelectProject, 
               {noProject.map(t=><TaskRow key={t.id} task={t} subtasks={subtasksMap[t.id]||[]} showProject={false}
                 onToggle={()=>onToggle(t.id)} onOpenDetail={()=>onOpenDetail(t)} onDelete={()=>onDelete(t.id)}/>)}
             </div>}
+            {archivedProjectData.length>0&&(
+              <div className="archived-projects-section">
+                <div className="archived-projects-toggle" onClick={()=>setShowArchived(v=>!v)}>
+                  <span>{showArchived?"▾":"▸"}</span> Archived projects ({archivedProjectData.length})
+                </div>
+                {showArchived&&<div className="projects-grid">
+                  {archivedProjectData.map(p=>{
+                    const accent=projectAccents[p.name]||PROJ_ACCENTS[0];
+                    return <ProjectTile key={p.name} p={p} accent={accent} isArchived={true}
+                      onSelect={onSelectProject} onArchive={handleArchive} onDelete={handleDeleteProject}/>;
+                  })}
+                </div>}
+              </div>
+            )}
           </>}
       </div>
     </>
@@ -976,6 +1069,10 @@ export default function App() {
     names.forEach((name,i)=>{ map[name]=PROJ_ACCENTS[i%PROJ_ACCENTS.length]; });
     return map;
   },[tasks]);
+
+  const allProjects = useMemo(()=>
+    [...new Set(tasks.filter(t=>t.project).map(t=>t.project))].sort()
+  ,[tasks]);
 
   const hasOverdue = useMemo(()=>tasks.some(t=>!t.archived&&!t.parent_id&&t.context===context&&isOverdue(t.due_date)),[tasks,context]);
 
@@ -1093,6 +1190,7 @@ export default function App() {
         </div>
 
         {modal==="form"&&<TaskForm task={editTarget} defaultProject={defaultProject} defaultContext={context}
+          allProjects={allProjects}
           onSave={handleSave} onCancel={()=>{setModal(null);setEditTarget(null);}}/>}
 
         {modal==="detail"&&liveDetailTarget&&<TaskDetail
