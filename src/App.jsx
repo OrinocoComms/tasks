@@ -175,6 +175,12 @@ const styles = `
   .act-btn{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:var(--radius);font-size:13px;transition:all 0.14s;}
   .act-btn:hover{background:var(--blue-pale);color:var(--blue-deep);}
   .act-btn.del:hover{background:var(--high-bg);color:var(--high);}
+  .act-btn.tomorrow:hover{background:rgba(47,168,89,0.10);color:var(--leaf);}
+
+  /* Quick prefix buttons in task form */
+  .quick-prefixes{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+  .quick-prefix-btn{font-family:var(--font-sans);font-size:11px;font-weight:700;padding:5px 11px;border-radius:var(--radius-pill);border:1.5px solid var(--rule-med);background:transparent;color:var(--ink-soft);cursor:pointer;transition:all 150ms var(--ease);letter-spacing:0.02em;}
+  .quick-prefix-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-pale);}
 
   .completed-strip{padding:0 20px;}
   .arch-toggle{display:inline-flex;align-items:center;gap:7px;padding:12px 0 4px;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);cursor:pointer;user-select:none;}
@@ -326,7 +332,18 @@ function TaskForm({ task, defaultProject, defaultContext, onSave, onCancel, allP
     <div className="overlay" onClick={e=>e.target===e.currentTarget&&onCancel()}>
       <div className="modal" style={{borderTop:`3px solid ${ctxC.bg}`}} onKeyDown={onKey}>
         <div className="modal-head">{task?"Edit task":"New task"}</div>
-        <div className="field"><label className="field-label">Title</label>
+        <div className="field">
+          <label className="field-label">Title</label>
+          {!task && (
+            <div className="quick-prefixes">
+              {["Schedule","Call","Create","Send","Review","Brief"].map(prefix=>(
+                <button key={prefix} type="button" className="quick-prefix-btn"
+                  onClick={()=>{ setTitle(t => t.startsWith(prefix+" ") ? t : prefix+" "+(t.replace(/^(Schedule|Call|Create|Send|Review|Brief)\s*/,""))); ref.current?.focus(); }}>
+                  {prefix}
+                </button>
+              ))}
+            </div>
+          )}
           <textarea ref={ref} className="field-input" placeholder="What needs doing?" value={title} onChange={e=>setTitle(e.target.value)} rows={2} /></div>
         <div className="two-col">
           <div className="field"><label className="field-label">Priority</label>
@@ -541,7 +558,7 @@ function TaskDetail({ task, subtasks, onClose, onEdit, onToggle, onDelete, onAdd
 }
 
 // ── TaskRow ───────────────────────────────────────────────────────────────────
-function TaskRow({ task, subtasks, onToggle, onOpenDetail, onDelete, showProject, projectAccents, onNavigateProject, urgent }) {
+function TaskRow({ task, subtasks, onToggle, onOpenDetail, onDelete, showProject, projectAccents, onNavigateProject, urgent, onMoveTomorrow }) {
   const accent = task.project&&projectAccents ? projectAccents[task.project] : null;
   const days = urgent ? daysOverdue(task.due_date) : 0;
   const subDone = (subtasks||[]).filter(s=>s.archived).length;
@@ -569,6 +586,7 @@ function TaskRow({ task, subtasks, onToggle, onOpenDetail, onDelete, showProject
         </div>
       </div>
       <div className="row-actions">
+        <button className="act-btn tomorrow" onClick={e=>{e.stopPropagation();onMoveTomorrow&&onMoveTomorrow();}} title="Move to tomorrow">→</button>
         <button className="act-btn" onClick={onOpenDetail}>✎</button>
         <button className="act-btn del" onClick={onDelete}>✕</button>
       </div>
@@ -710,7 +728,7 @@ function SubtaskTodayRow({ subtask, parentTitle, parentProject, onToggle, onOpen
 }
 
 // ── TodayView ─────────────────────────────────────────────────────────────────
-function TodayView({ tasks, context, projectAccents, onAdd, onOpenDetail, onToggle, onDelete, onNavigateProject, onCtxChange }) {
+function TodayView({ tasks, context, projectAccents, onAdd, onOpenDetail, onToggle, onDelete, onNavigateProject, onCtxChange, onMoveTomorrow }) {
   const [showMoreWeek, setShowMoreWeek] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
 
@@ -781,6 +799,7 @@ function TodayView({ tasks, context, projectAccents, onAdd, onOpenDetail, onTogg
     }
     return <TaskRow key={t.id} task={t} subtasks={subtasksMap[t.id]||[]} showProject projectAccents={projectAccents}
       onToggle={()=>onToggle(t.id)} onOpenDetail={()=>onOpenDetail(t)} onDelete={()=>onDelete(t.id)}
+      onMoveTomorrow={()=>onMoveTomorrow(t.id)}
       onNavigateProject={onNavigateProject} />;
   }
 
@@ -793,6 +812,7 @@ function TodayView({ tasks, context, projectAccents, onAdd, onOpenDetail, onTogg
     }
     return <TaskRow key={t.id} task={t} subtasks={subtasksMap[t.id]||[]} urgent showProject projectAccents={projectAccents}
       onToggle={()=>onToggle(t.id)} onOpenDetail={()=>onOpenDetail(t)} onDelete={()=>onDelete(t.id)}
+      onMoveTomorrow={()=>onMoveTomorrow(t.id)}
       onNavigateProject={onNavigateProject} />;
   }
 
@@ -1131,6 +1151,15 @@ export default function App() {
     }
   }
 
+  async function handleMoveTomorrow(id) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const tom = new Date(today); tom.setDate(today.getDate()+1);
+    const tomStr = tom.getFullYear()+"-"+String(tom.getMonth()+1).padStart(2,"0")+"-"+String(tom.getDate()).padStart(2,"0");
+    const changes = { due_date: tomStr };
+    updateTasks(prev=>prev.map(t=>t.id===id?{...t,...changes}:t));
+    if (supabase) await supabase.from("tasks").update(changes).eq("id",id);
+  }
+
   async function handleUpdateSubtask(id, data) {
     updateTasks(prev=>prev.map(t=>t.id===id?{...t,...data}:t));
     if (supabase) await supabase.from("tasks").update(data).eq("id",id);
@@ -1163,7 +1192,7 @@ export default function App() {
   function renderMain() {
     if (tab==="today") return <TodayView tasks={tasks} context={context} projectAccents={projectAccents}
       onAdd={openAdd} onOpenDetail={openDetail} onToggle={handleToggle} onDelete={handleDelete}
-      onNavigateProject={handleNavigateProject} onCtxChange={handleCtxChange}/>;
+      onNavigateProject={handleNavigateProject} onCtxChange={handleCtxChange} onMoveTomorrow={handleMoveTomorrow}/>;
     if (selectedProject) return <ProjectDetailView projectName={selectedProject} tasks={tasks} context={context} projectAccents={projectAccents}
       onBack={()=>setSelectedProject(null)} onAdd={openAdd} onOpenDetail={openDetail} onToggle={handleToggle} onDelete={handleDelete}
       onToggleSubtask={handleToggle} onDeleteSubtask={handleDelete} onAddSubtask={handleAddSubtask}/>;
