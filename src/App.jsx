@@ -336,7 +336,7 @@ function TaskForm({ task, defaultProject, defaultContext, onSave, onCancel, allP
           <label className="field-label">Title</label>
           {!task && (
             <div className="quick-prefixes">
-              {["Schedule","Call","Create","Send","Review","Brief"].map(prefix=>(
+              {["Schedule","Call","Create","Send","Review"].map(prefix=>(
                 <button key={prefix} type="button" className="quick-prefix-btn"
                   onClick={()=>{ setTitle(t => t.startsWith(prefix+" ") ? t : prefix+" "+(t.replace(/^(Schedule|Call|Create|Send|Review|Brief)\s*/,""))); ref.current?.focus(); }}>
                   {prefix}
