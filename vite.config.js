@@ -8,17 +8,17 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Orinoco Tasks',
-        short_name: 'Tasks',
-        description: 'Personal task manager',
-        theme_color: '#4DA3C9',
-        background_color: '#F6F1EB',
+        name: 'Little steps',
+        short_name: 'Steps',
+        description: 'One small step a day',
+        theme_color: '#2e6a4f',
+        background_color: '#f6f4ef',
         display: 'standalone',
-        orientation: 'portrait',
         start_url: '/',
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'icon-512.png', sizes: '512x512', type: 'image/png' }
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
         ]
       },
       workbox: {
