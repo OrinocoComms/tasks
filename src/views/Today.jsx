@@ -37,6 +37,7 @@ function when(item, today) {
 export default function Today({ db, actions, startSession }) {
   const items = todayList(db);
   const [picked, setPicked] = useState(null);
+  const [flipped, setFlipped] = useState(null);
   const [adding, setAdding] = useState("");
   const today = toDateStr(new Date());
   const tomorrowStr = toDateStr(new Date(Date.now() + 86400000));
@@ -65,19 +66,24 @@ export default function Today({ db, actions, startSession }) {
         {items.map((item) => {
           const { task, step } = item;
           const on = selected?.key === item.key;
-          const w = when(item, today);
+          const isFlipped = step && flipped === item.key;
+          // Tap to pick it. Tap a picked subtask again to flip it and see which task it belongs to.
+          const tap = () => {
+            if (!on) { setPicked(item.key); setFlipped(null); }
+            else if (step) setFlipped(isFlipped ? null : item.key);
+          };
           return (
-            <button key={item.key} className={`pick ${on ? "on" : ""}`} onClick={() => setPicked(item.key)}>
-              <span className="radio" />
-              <span className="body">
+            <button key={item.key} className={`pick flip ${on ? "on" : ""} ${isFlipped ? "flipped" : ""} ${step ? "has-parent" : ""}`} onClick={tap}>
+              <span className="face front">
+                <span className="radio" />
                 <span className="title">{step ? step.title : task.title}</span>
-                <span className="meta">
-                  {step && <span>{task.title}</span>}
-                  {!step && zone(task.zone_id) && <span>{zone(task.zone_id).name}</span>}
-                  {w && <span className={w.late ? "late" : ""}>{w.text}</span>}
-                  {task.postponed >= 3 && <span className="late">moved {task.postponed}×</span>}
-                </span>
               </span>
+              {step && (
+                <span className="face back" aria-hidden={!isFlipped}>
+                  <span className="kicker">Part of</span>
+                  <span className="title">{task.title}</span>
+                </span>
+              )}
             </button>
           );
         })}

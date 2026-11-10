@@ -313,3 +313,15 @@ textarea.input.big { resize: none; overflow: hidden; line-height: 1.15; display:
 .dp-grid .day.sel { background: none; }
 .dp-grid .day.sel::before { background: var(--accent); box-shadow: none; }
 .dp-grid .day.between { background: var(--accent-soft); }
+
+/* Today cards: subtasks flip to show their parent task */
+.pick-list { perspective: 1200px; }
+.pick.flip { display: grid; padding: 0; background: transparent; border: 0; box-shadow: none; transform-style: preserve-3d; transition: transform 0.45s cubic-bezier(.2,.7,.2,1); }
+.pick.flip.flipped { transform: rotateX(180deg); }
+.pick.flip .face { grid-area: 1 / 1; display: flex; align-items: center; gap: 14px; padding: 18px 16px; border-radius: 14px; background: var(--card); border: 1px solid transparent; backface-visibility: hidden; -webkit-backface-visibility: hidden; position: relative; }
+.pick.flip.on .face { border-color: var(--ink); box-shadow: inset 0 0 0 0.5px var(--ink); }
+.pick.flip .face.back { transform: rotateX(180deg); flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; background: var(--sage); border-color: transparent; box-shadow: none; padding-left: 52px; }
+.pick.flip .face.back .kicker { font-size: 11px; }
+.pick.flip .title { font-size: 18px; letter-spacing: -0.01em; }
+/* A tiny folded corner hints that a subtask card has a back */
+.pick.flip.has-parent .front::after { content: ""; position: absolute; top: 0; right: 0; width: 14px; height: 14px; border-top-right-radius: 14px; background: linear-gradient(225deg, var(--sage) 50%, transparent 50%); }
