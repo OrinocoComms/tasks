@@ -5,7 +5,7 @@ import { DAY, toDateStr } from "./plan.js";
 // Demo mode: no Supabase configured, or ?demo in the URL. Data lives in this browser only.
 export const isDemo = !supabase || new URLSearchParams(location.search).has("demo");
 
-const LS = "tasks-demo-v3";
+const LS = "tasks-demo-v4";
 const today = () => toDateStr(new Date());
 const tomorrow = () => toDateStr(new Date(Date.now() + DAY));
 const uid = () => crypto.randomUUID();
@@ -25,11 +25,12 @@ function demoSeed() {
   const add = (t, stepList = []) => {
     const id = uid();
     tasks.push({ id, notes: "", consequence: "", due_date: null, deadline_type: "someday", status: "ready", do_date: inDays(0), postponed: 0, created_at: ago(3), touched_at: ago(1), ...t });
-    stepList.forEach(([title, done], i) =>
-      steps.push({ id: uid(), task_id: id, title, position: i, done: !!done, done_at: done ? ago(done) : null }));
+    stepList.forEach(([title, done, doIn, dueIn], i) =>
+      steps.push({ id: uid(), task_id: id, title, position: i, done: !!done, done_at: done ? ago(done) : null,
+        do_date: doIn != null ? inDays(doIn) : null, due_date: dueIn != null ? inDays(dueIn) : null }));
   };
   add({ title: "Renew car insurance", zone_id: z["Admin & money"], deadline_type: "hard", due_date: inDays(5), consequence: "Car isn't insured" },
-    [["Find current policy email and note renewal price", 1], ["Get two comparison quotes online"], ["Phone current insurer to ask for a better price"], ["Pay and save the new documents"]]);
+    [["Find current policy email and note renewal price", 1], ["Get two comparison quotes online", 0, 0, 2], ["Phone current insurer to ask for a better price", 0, 3], ["Pay and save the new documents", 0, 4]]);
   add({ title: "Book kids' dentist check-ups", zone_id: z["Kids"], deadline_type: "target", due_date: inDays(12) },
     [["Open the dentist's booking page on my phone"], ["Pick two after-school slots and book"]]);
   add({ title: "Clear the garage", zone_id: z["House"], status: "designing", touched_at: ago(2), do_date: inDays(3) });
@@ -153,9 +154,10 @@ export function useStore(user) {
 
     // Steps
     // Replace the not-yet-done steps of a task with a new list (keeps finished ones)
-    replaceSteps: (taskId, titles) => {
+    // items: [{ title, do_date, due_date }]
+    replaceSteps: (taskId, items) => {
       const kept = db.steps.filter((s) => s.task_id === taskId && s.done).sort((a, b) => a.position - b.position);
-      const fresh = titles.map((title, i) => ({ id: uid(), task_id: taskId, title, position: kept.length + i, done: false, done_at: null }));
+      const fresh = items.map((it, i) => ({ id: uid(), task_id: taskId, title: it.title, do_date: it.do_date || null, due_date: it.due_date || null, position: kept.length + i, done: false, done_at: null }));
       setDb((d) => ({ ...d, steps: [...d.steps.filter((s) => s.task_id !== taskId || s.done), ...fresh] }));
       if (!isDemo) {
         (async () => {
@@ -177,8 +179,11 @@ export function useStore(user) {
         remote(supabase?.from("tasks").update({ status: "done", completed_at: t }).eq("id", step.task_id));
         return "task-done";
       }
-      patch("tasks", step.task_id, { do_date: tomorrow() });
-      remote(supabase?.from("tasks").update({ do_date: tomorrow() }).eq("id", step.task_id));
+      // Undated subtasks come one a day: the next one appears tomorrow
+      if (!step.do_date && left.some((s) => !s.do_date)) {
+        patch("tasks", step.task_id, { do_date: tomorrow() });
+        remote(supabase?.from("tasks").update({ do_date: tomorrow() }).eq("id", step.task_id));
+      }
       return "step-done";
     },
     // Finish a task that has no steps
@@ -189,10 +194,17 @@ export function useStore(user) {
       remote(supabase?.from("tasks").update(c).eq("id", task.id));
       return "task-done";
     },
-    // Move tasks to tomorrow, counting how often each has been put off
-    postpone: (tasks) => {
-      for (const task of tasks) {
-        const c = { do_date: tomorrow(), postponed: (task.postponed || 0) + 1 };
+    // Move today's items to tomorrow, counting how often each task has been put off
+    postpone: (items) => {
+      const tm = tomorrow();
+      const moveDates = (row) => ({ do_date: tm, ...(row.due_date && row.due_date < tm ? { due_date: tm } : {}) });
+      for (const { task, step } of items) {
+        if (step && step.do_date) {
+          const c = moveDates(step);
+          patch("steps", step.id, c);
+          remote(supabase?.from("steps").update(c).eq("id", step.id));
+        }
+        const c = { ...(step && step.do_date ? {} : moveDates(task)), postponed: (task.postponed || 0) + 1 };
         patch("tasks", task.id, c);
         remote(supabase?.from("tasks").update(c).eq("id", task.id));
       }

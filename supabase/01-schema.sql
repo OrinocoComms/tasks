@@ -45,6 +45,8 @@ create table if not exists public.steps (
   task_id uuid not null references public.tasks on delete cascade,
   title text not null,
   position int not null default 0,
+  do_date date,   -- optional: its own start date (or the only date)
+  due_date date,  -- optional: its own finish date
   done boolean not null default false,
   done_at timestamptz,
   created_at timestamptz not null default now()
@@ -63,6 +65,8 @@ create table if not exists public.sessions (
 -- (in case the tasks table was created by an earlier version of this file)
 alter table public.tasks add column if not exists do_date date default current_date;
 alter table public.tasks add column if not exists postponed int not null default 0;
+alter table public.steps add column if not exists do_date date;
+alter table public.steps add column if not exists due_date date;
 
 create index if not exists tasks_user_idx on public.tasks (user_id);
 create index if not exists steps_task_idx on public.steps (task_id);

@@ -1,13 +1,37 @@
 import { useState } from "react";
-import { stepsFor, toDateStr } from "../lib/plan.js";
+import { niceDate, stepsFor, toDateStr } from "../lib/plan.js";
 
-// Everything on today's list: open tasks whose do-date is today or earlier
+// Today's list. A task with no subtasks shows up from its start date.
+// A subtask with its own date shows up from that date. Undated subtasks
+// show up one at a time (the next one) from the task's start date.
 export function todayList(db) {
   const today = toDateStr(new Date());
-  return db.tasks
-    .filter((t) => t.status !== "done" && t.do_date && t.do_date <= today)
-    .sort((a, b) => a.do_date.localeCompare(b.do_date) || a.created_at.localeCompare(b.created_at))
-    .map((t) => ({ task: t, step: stepsFor(t.id, db.steps).find((s) => !s.done) || null }));
+  const out = [];
+  for (const task of db.tasks) {
+    if (task.status === "done") continue;
+    const open = stepsFor(task.id, db.steps).filter((s) => !s.done);
+    if (!open.length) {
+      if (task.do_date && task.do_date <= today) out.push({ key: task.id, task, step: null, start: task.do_date, end: task.due_date });
+      continue;
+    }
+    const nextUndated = open.find((s) => !s.do_date);
+    for (const step of open) {
+      if (step.do_date ? step.do_date <= today : step === nextUndated && task.do_date && task.do_date <= today) {
+        out.push({ key: step.id, task, step, start: step.do_date || task.do_date, end: step.due_date || (step.do_date ? null : task.due_date) });
+      }
+    }
+  }
+  return out.sort((a, b) => (a.end || "9999").localeCompare(b.end || "9999") || a.start.localeCompare(b.start) || a.task.created_at.localeCompare(b.task.created_at));
+}
+
+function when(item, today) {
+  if (item.end) {
+    if (item.end < today) return { late: true, text: `was due ${niceDate(item.end)}` };
+    if (item.end === today) return { late: true, text: "due today" };
+    return { text: `until ${niceDate(item.end)}` };
+  }
+  if (item.start < today) return { late: true, text: "from earlier" };
+  return null;
 }
 
 export default function Today({ db, actions, startSession }) {
@@ -18,7 +42,7 @@ export default function Today({ db, actions, startSession }) {
   const tomorrowStr = toDateStr(new Date(Date.now() + 86400000));
   const tomorrowCount = db.tasks.filter((t) => t.status !== "done" && t.do_date === tomorrowStr).length;
   const doneToday = db.tasks.some((t) => t.completed_at && t.completed_at.slice(0, 10) === today) || db.steps.some((s) => s.done_at && s.done_at.slice(0, 10) === today);
-  const selected = items.find((i) => i.task.id === picked) || items[0];
+  const selected = items.find((i) => i.key === picked) || items[0];
   const zone = (id) => db.zones.find((z) => z.id === id);
 
   const add = (e) => {
@@ -38,17 +62,19 @@ export default function Today({ db, actions, startSession }) {
       )}
 
       <div className="pick-list">
-        {items.map(({ task, step }) => {
-          const on = selected?.task.id === task.id;
+        {items.map((item) => {
+          const { task, step } = item;
+          const on = selected?.key === item.key;
+          const w = when(item, today);
           return (
-            <button key={task.id} className={`pick ${on ? "on" : ""}`} onClick={() => setPicked(task.id)}>
+            <button key={item.key} className={`pick ${on ? "on" : ""}`} onClick={() => setPicked(item.key)}>
               <span className="radio" />
               <span className="body">
                 <span className="title">{step ? step.title : task.title}</span>
                 <span className="meta">
                   {step && <span>{task.title}</span>}
                   {!step && zone(task.zone_id) && <span>{zone(task.zone_id).name}</span>}
-                  {task.do_date < today && <span className="late">from earlier</span>}
+                  {w && <span className={w.late ? "late" : ""}>{w.text}</span>}
                   {task.postponed >= 3 && <span className="late">moved {task.postponed}×</span>}
                 </span>
               </span>
@@ -63,7 +89,7 @@ export default function Today({ db, actions, startSession }) {
 
       {items.length > 0 && (
         <div className="start-bar">
-          <button className="btn accent wide big" onClick={() => startSession(selected.task.id)}>Start · 15 min</button>
+          <button className="btn accent wide big" onClick={() => startSession(selected.key)}>Start · 15 min</button>
         </div>
       )}
     </div>

@@ -227,3 +227,37 @@ input.chip { padding: 6px 12px; font-size: 14px; }
 .clear h1 { font-size: 44px; }
 .task .title { font-size: 17px; }
 .demo-bar { background: var(--sage); color: var(--ink); }
+
+/* Designer: zone heading, dates, subtasks */
+.zone-select { position: relative; display: inline-flex; align-items: center; gap: 4px; }
+.zone-select select { appearance: none; -webkit-appearance: none; border: 0; background: transparent; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 4px 14px 4px 0; cursor: pointer; }
+.zone-select .caret { position: absolute; right: 0; font-size: 10px; color: var(--muted); pointer-events: none; }
+.datefield .seg { display: inline-flex; background: var(--card); border-radius: 999px; padding: 3px; gap: 2px; }
+.datefield .seg button { border: 0; background: transparent; border-radius: 999px; padding: 7px 13px; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.datefield .seg button.on { background: var(--ink); color: var(--paper); }
+.datefield .input.date { width: auto; padding: 7px 12px; border-radius: 999px; font-size: 14px; }
+.datefield .range { display: flex; gap: 10px; flex-wrap: wrap; }
+.datefield .range label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.datefield.compact { margin: 6px 0 4px; padding: 10px; background: var(--card); border-radius: 14px; }
+.datefield.compact .seg { background: var(--paper); }
+.datefield.compact .seg button { padding: 6px 9px; font-size: 12px; }
+.toggle { display: flex; align-items: center; gap: 10px; border: 0; background: none; padding: 12px 0 0; text-align: left; font-size: 14px; }
+.toggle .sw { width: 34px; height: 20px; border-radius: 999px; background: var(--line); position: relative; flex-shrink: 0; transition: background 0.15s; }
+.toggle .sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform 0.15s; }
+.toggle.on .sw { background: var(--accent); }
+.toggle.on .sw::after { transform: translateX(14px); }
+.subtasks { margin-top: 22px; border-top: 1px solid var(--line); }
+.sub { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); width: 100%; background: none; border-left: 0; border-right: 0; border-top: 0; text-align: left; }
+.sub .n { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--faint); flex-shrink: 0; margin-top: 3px; font-size: 11px; display: grid; place-items: center; }
+.sub.first .n { border-color: var(--accent); background: var(--accent-soft); }
+.sub.done { opacity: 0.45; }
+.sub.done .n { border-color: var(--ink); }
+.sub.done .t { text-decoration: line-through; flex: 1; }
+.sub .grow { flex: 1; min-width: 0; }
+.sub textarea.t { color: var(--ink); width: 100%; border: 0; background: transparent; outline: none; font-size: 16px; padding: 0; resize: none; overflow: hidden; line-height: 1.35; display: block; }
+.sub .x { background: none; border: 0; color: var(--faint); padding: 2px 6px; }
+.sub.add { color: var(--muted); cursor: pointer; }
+.sub.add .n { border-style: dashed; }
+.date-pill { margin-top: 6px; border: 0; background: var(--card); border-radius: 999px; padding: 4px 10px; font-size: 12px; color: var(--ink); }
+.date-pill.empty { color: var(--faint); background: transparent; padding-left: 0; }
+.sheet .datefield .seg { background: var(--card); }

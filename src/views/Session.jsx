@@ -44,9 +44,9 @@ export default function Session({ db, actions, celebrate, firstId, onClose }) {
   // The chosen task first, then the rest of today's list in order; skipped ones go to the back
   const list = todayList(db);
   const ordered = [
-    ...list.filter((i) => i.task.id === first),
-    ...list.filter((i) => i.task.id !== first && !skipped.includes(i.task.id)),
-    ...list.filter((i) => i.task.id !== first && skipped.includes(i.task.id)),
+    ...list.filter((i) => i.key === first),
+    ...list.filter((i) => i.key !== first && !skipped.includes(i.key)),
+    ...list.filter((i) => i.key !== first && skipped.includes(i.key)),
   ];
   const current = ordered[0];
 
@@ -64,14 +64,14 @@ export default function Session({ db, actions, celebrate, firstId, onClose }) {
   };
 
   const skip = () => {
-    setSkipped([...skipped.filter((id) => id !== current.task.id), current.task.id]);
+    setSkipped([...skipped.filter((id) => id !== current.key), current.key]);
     setFirst(null);
   };
 
   const again = () => { setRoundStart(Date.now()); setNow(Date.now()); setPhase("work"); };
 
   const finish = (moveRest) => {
-    if (moveRest) actions.postpone(list.map((i) => i.task));
+    if (moveRest) actions.postpone(list);
     if (!saved.current) {
       saved.current = true;
       actions.saveSession({ started_at: new Date(sessionStart.current).toISOString(), actual_seconds: Math.round((Date.now() - sessionStart.current) / 1000), steps_done: doneCount });
