@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { aiBreakdown, isDemo } from "../lib/data.js";
-import { planLabel, stepsFor } from "../lib/plan.js";
+import { DAY, planLabel, stepsFor, toDateStr } from "../lib/plan.js";
 
 const TESTS = [
   ["action", "One physical action", "You can picture yourself doing it: open, find, write, phone…"],
@@ -34,13 +34,33 @@ function ZonePicker({ zones, value, onChange }) {
   );
 }
 
+function DoDate({ value, onChange }) {
+  const today = toDateStr(new Date());
+  const tomorrow = toDateStr(new Date(Date.now() + DAY));
+  const custom = value && value !== today && value !== tomorrow;
+  return (
+    <div className="field">
+      <label>When will you do it?</label>
+      <div className="row wrap">
+        <button type="button" className={`chip ${value === today || (value && value < today) ? "on" : ""}`} onClick={() => onChange(today)}>Today</button>
+        <button type="button" className={`chip ${value === tomorrow ? "on" : ""}`} onClick={() => onChange(tomorrow)}>Tomorrow</button>
+        <input type="date" className={`chip ${custom && value > today ? "on" : ""}`} value={custom && value > today ? value : ""} onChange={(e) => onChange(e.target.value || null)} />
+        <button type="button" className={`chip ${!value ? "on" : ""}`} onClick={() => onChange(null)}>Not yet</button>
+      </div>
+    </div>
+  );
+}
+
 function NewTask({ db, zoneId, actions, onClose, onCreated }) {
   const [title, setTitle] = useState("");
   const [zone, setZone] = useState(zoneId || db.zones[0]?.id || null);
+  const [doDate, setDoDate] = useState(toDateStr(new Date()));
+  const create = () => actions.addTask({ title: title.trim(), zone_id: zone, do_date: doDate });
   const submit = (e) => {
     e.preventDefault();
     if (!title.trim()) return;
-    onCreated(actions.addTask({ title: title.trim(), zone_id: zone }));
+    create();
+    onClose();
   };
   return (
     <Sheet onClose={onClose}>
@@ -48,9 +68,10 @@ function NewTask({ db, zoneId, actions, onClose, onCreated }) {
         <div className="kicker">New task</div>
         <input className="input big" autoFocus placeholder="What's been nagging at you?" value={title} onChange={(e) => setTitle(e.target.value)} style={{ margin: "8px 0 18px" }} />
         <ZonePicker zones={db.zones} value={zone} onChange={setZone} />
+        <DoDate value={doDate} onChange={setDoDate} />
         <div className="row">
-          <button type="button" className="btn ghost" onClick={onClose}>Cancel</button>
-          <button className="btn" style={{ flex: 1 }} disabled={!title.trim()}>Next: break it down →</button>
+          <button className="btn" style={{ flex: 1 }} disabled={!title.trim()}>Save</button>
+          <button type="button" className="btn ghost" disabled={!title.trim()} onClick={() => onCreated(create())}>Break it down →</button>
         </div>
       </form>
     </Sheet>
@@ -149,6 +170,7 @@ function Design({ task, db, plan, actions, onClose, celebrate }) {
       </div>
       <input className="input big" defaultValue={task.title} onBlur={(e) => e.target.value.trim() && e.target.value !== task.title && update({ title: e.target.value.trim() })} style={{ margin: "6px 0 14px" }} />
       <ZonePicker zones={db.zones} value={task.zone_id} onChange={(id) => update({ zone_id: id })} />
+      {!isDone && <DoDate value={task.do_date} onChange={(d) => update({ do_date: d })} />}
 
       {p?.staleness === "rethink" && (
         <div className="banner warn">

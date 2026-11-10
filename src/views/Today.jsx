@@ -1,98 +1,71 @@
-import { buildQueue, didSessionToday, needsExtraSession, planLabel } from "../lib/plan.js";
-import TaskRow from "./TaskRow.jsx";
+import { useState } from "react";
+import { stepsFor, toDateStr } from "../lib/plan.js";
 
-function greeting() {
-  const h = new Date().getHours();
-  return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+// Everything on today's list: open tasks whose do-date is today or earlier
+export function todayList(db) {
+  const today = toDateStr(new Date());
+  return db.tasks
+    .filter((t) => t.status !== "done" && t.do_date && t.do_date <= today)
+    .sort((a, b) => a.do_date.localeCompare(b.do_date) || a.created_at.localeCompare(b.created_at))
+    .map((t) => ({ task: t, step: stepsFor(t.id, db.steps).find((s) => !s.done) || null }));
 }
 
-export default function Today({ db, plan, openDesigner, startSession }) {
-  const queue = buildQueue(db.tasks, db.steps, plan);
-  const doneToday = didSessionToday(db.sessions);
-  const extra = needsExtraSession(db.tasks, plan);
-  const open = db.tasks.filter((t) => t.status !== "done");
-  const toDesign = open.filter((t) => t.status === "designing");
-  const rethink = open.filter((t) => plan[t.id]?.staleness === "rethink");
-  const dated = open
-    .filter((t) => t.due_date && t.deadline_type !== "someday")
-    .sort((a, b) => a.due_date.localeCompare(b.due_date))
-    .slice(0, 5);
+export default function Today({ db, actions, startSession }) {
+  const items = todayList(db);
+  const [picked, setPicked] = useState(null);
+  const [adding, setAdding] = useState("");
+  const today = toDateStr(new Date());
+  const tomorrowStr = toDateStr(new Date(Date.now() + 86400000));
+  const tomorrowCount = db.tasks.filter((t) => t.status !== "done" && t.do_date === tomorrowStr).length;
+  const doneToday = db.tasks.some((t) => t.completed_at && t.completed_at.slice(0, 10) === today) || db.steps.some((s) => s.done_at && s.done_at.slice(0, 10) === today);
+  const selected = items.find((i) => i.task.id === picked) || items[0];
   const zone = (id) => db.zones.find((z) => z.id === id);
-  const next = queue[0];
+
+  const add = (e) => {
+    e.preventDefault();
+    if (!adding.trim()) return;
+    actions.addTask({ title: adding.trim(), zone_id: null });
+    setAdding("");
+  };
 
   return (
-    <>
+    <div className="today">
       <div className="kicker">{new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</div>
-      <h1>{greeting()}</h1>
-      <p className="sub">{doneToday ? "Today's 15 minutes are done. Nice." : "Fifteen minutes. One small step at a time."}</p>
+      <h1>Today</h1>
+      <p className="sub">
+        {items.length === 0 ? (doneToday ? "All done for today. Nice." : "Nothing on today's list.") : `${items.length} to do. Pick where to start.`}
+      </p>
+      {items.length === 0 && tomorrowCount > 0 && <p className="small" style={{ marginTop: -12, marginBottom: 20 }}>{tomorrowCount} lined up for tomorrow.</p>}
 
-      {extra && (
-        <div className="banner danger">
-          <span>⏰</span>
-          <div className="grow">
-            A hard deadline is at risk. {doneToday ? "A second session today would get it back on track." : "Today's session will start with it."}
-          </div>
+      <div className="pick-list">
+        {items.map(({ task, step }) => {
+          const on = selected?.task.id === task.id;
+          return (
+            <button key={task.id} className={`pick ${on ? "on" : ""}`} onClick={() => setPicked(task.id)}>
+              <span className="radio" />
+              <span className="body">
+                <span className="title">{step ? step.title : task.title}</span>
+                <span className="meta">
+                  {step && <span>{zone(task.zone_id)?.emoji} {task.title}</span>}
+                  {!step && zone(task.zone_id) && <span>{zone(task.zone_id).emoji} {zone(task.zone_id).name}</span>}
+                  {task.do_date < today && <span className="late">from earlier</span>}
+                  {task.postponed >= 3 && <span className="late">moved {task.postponed}×</span>}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+        <form className="pick add" onSubmit={add}>
+          <span className="radio plus">+</span>
+          <input placeholder="Add something for today" value={adding} onChange={(e) => setAdding(e.target.value)} />
+        </form>
+      </div>
+
+      {items.length > 0 && (
+        <div className="start-bar">
+          <button className="btn accent wide big" onClick={() => startSession(selected.task.id)}>Start · 15 min</button>
         </div>
       )}
-
-      {rethink.length > 0 && (
-        <div className="banner warn">
-          <span>🪑</span>
-          <div className="grow">
-            <b>{rethink.length === 1 ? `"${rethink[0].title}"` : `${rethink.length} tasks`}</b> {rethink.length === 1 ? "has" : "have"} sat untouched for two weeks or more. That usually means the first step is still too big.
-          </div>
-          <button className="btn sm ghost" onClick={() => openDesigner(rethink[0].id)}>Shrink it</button>
-        </div>
-      )}
-
-      {next ? (
-        <div className="card hero">
-          <div className="kicker">First up</div>
-          <div className="step">{next.step.title}</div>
-          <div className="row wrap" style={{ marginBottom: 20 }}>
-            <span className="small">{zone(next.task.zone_id)?.emoji} {next.task.title}</span>
-            {(() => { const l = planLabel(next.task, next.p); return l && <span className={`pill ${l.tone}`}>{l.text}</span>; })()}
-          </div>
-          <button className="btn accent wide" onClick={startSession}>
-            {doneToday ? "Go again: another 15" : "Start my 15"}
-          </button>
-          <p className="small" style={{ textAlign: "center", margin: "10px 0 0" }}>You only have to do one minute.</p>
-          {queue.length > 1 && (
-            <p className="small" style={{ marginTop: 16 }}>
-              Then: {queue.slice(1, 3).map((q) => q.step.title).join(" · ")}{queue.length > 3 ? " …" : ""}
-            </p>
-          )}
-        </div>
-      ) : (
-        <div className="card hero">
-          <div className="kicker">Nothing ready yet</div>
-          <div className="step">{toDesign.length ? "Give a task a first step" : "What's been nagging at you?"}</div>
-          <p className="small">
-            A task is ready when its first step is small enough to start without thinking.
-          </p>
-          <button className="btn accent wide" style={{ marginTop: 14 }} onClick={() => openDesigner(toDesign[0]?.id || "new")}>
-            {toDesign.length ? `Design "${toDesign[0].title}"` : "Add a task"}
-          </button>
-        </div>
-      )}
-
-      {toDesign.length > 0 && next && (
-        <>
-          <h2>Needs a first step</h2>
-          <div className="card" style={{ padding: "4px 14px" }}>
-            {toDesign.slice(0, 4).map((t) => <TaskRow key={t.id} task={t} db={db} plan={plan} onClick={() => openDesigner(t.id)} />)}
-          </div>
-        </>
-      )}
-
-      {dated.length > 0 && (
-        <>
-          <h2>Deadlines</h2>
-          <div className="card" style={{ padding: "4px 14px" }}>
-            {dated.map((t) => <TaskRow key={t.id} task={t} db={db} plan={plan} onClick={() => openDesigner(t.id)} />)}
-          </div>
-        </>
-      )}
-    </>
+    </div>
   );
 }

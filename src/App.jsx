@@ -46,7 +46,8 @@ function Home({ user }) {
   if (!db) return <div className="empty">{error ? `Couldn't load: ${error}` : "Loading…"}</div>;
 
   const celebrate = (result, task) => {
-    if (result === "task-done") setBigWin(task);
+    // The big moment is for finishing a task that took several steps; quick ones get the burst
+    if (result === "task-done" && db.steps.filter((s) => s.task_id === task.id).length > 1) setBigWin(task);
     else setBurst(Date.now());
   };
 
@@ -68,13 +69,13 @@ function Home({ user }) {
           ))}
         </nav>
         <main className="main">
-          {tab === "today" && <Today {...shared} startSession={() => setSession(true)} />}
+          {tab === "today" && <Today {...shared} startSession={(id) => setSession(id)} />}
           {tab === "tasks" && <Tasks {...shared} />}
           {tab === "wins" && <Wins {...shared} />}
         </main>
       </div>
 
-      {tab !== "wins" && <button className="fab" aria-label="Add task" onClick={() => openDesigner("new")}>+</button>}
+      {tab === "tasks" && <button className="fab" aria-label="Add task" onClick={() => openDesigner("new")}>+</button>}
 
       {designing && (
         <Designer
@@ -86,7 +87,7 @@ function Home({ user }) {
           onCreated={(t) => setDesigning(t.id)}
         />
       )}
-      {session && <Session {...shared} onClose={() => setSession(false)} />}
+      {session && <Session {...shared} firstId={session} onClose={() => setSession(false)} />}
       {burst && <Burst key={burst} onDone={() => setBurst(null)} />}
       {bigWin && <BigWin task={bigWin} steps={db.steps.filter((s) => s.task_id === bigWin.id)} onClose={() => setBigWin(null)} />}
       {error && <div className="toast">{error}</div>}

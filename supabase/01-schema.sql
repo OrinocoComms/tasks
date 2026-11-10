@@ -30,7 +30,9 @@ create table if not exists public.tasks (
   deadline_type text not null default 'someday' check (deadline_type in ('hard', 'target', 'someday')),
   due_date date,
   consequence text,               -- "what happens if it isn't done?"
-  status text not null default 'designing' check (status in ('designing', 'ready', 'done')),
+  status text not null default 'ready' check (status in ('designing', 'ready', 'done')),
+  do_date date default current_date,  -- the day it sits on your Today list
+  postponed int not null default 0,   -- how many times it's been moved to tomorrow
   created_at timestamptz not null default now(),
   touched_at timestamptz not null default now(),  -- last real progress or redesign
   completed_at timestamptz
@@ -57,6 +59,10 @@ create table if not exists public.sessions (
   actual_seconds int not null default 0,
   steps_done int not null default 0
 );
+
+-- (in case the tasks table was created by an earlier version of this file)
+alter table public.tasks add column if not exists do_date date default current_date;
+alter table public.tasks add column if not exists postponed int not null default 0;
 
 create index if not exists tasks_user_idx on public.tasks (user_id);
 create index if not exists steps_task_idx on public.steps (task_id);

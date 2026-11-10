@@ -5,7 +5,9 @@ import { DAY, toDateStr } from "./plan.js";
 // Demo mode: no Supabase configured, or ?demo in the URL. Data lives in this browser only.
 export const isDemo = !supabase || new URLSearchParams(location.search).has("demo");
 
-const LS = "tasks-demo-v2";
+const LS = "tasks-demo-v3";
+const today = () => toDateStr(new Date());
+const tomorrow = () => toDateStr(new Date(Date.now() + DAY));
 const uid = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
 
@@ -22,7 +24,7 @@ function demoSeed() {
   const steps = [];
   const add = (t, stepList = []) => {
     const id = uid();
-    tasks.push({ id, notes: "", consequence: "", due_date: null, deadline_type: "someday", status: "ready", created_at: ago(3), touched_at: ago(1), ...t });
+    tasks.push({ id, notes: "", consequence: "", due_date: null, deadline_type: "someday", status: "ready", do_date: inDays(0), postponed: 0, created_at: ago(3), touched_at: ago(1), ...t });
     stepList.forEach(([title, done], i) =>
       steps.push({ id: uid(), task_id: id, title, position: i, done: !!done, done_at: done ? ago(done) : null }));
   };
@@ -30,8 +32,11 @@ function demoSeed() {
     [["Find current policy email and note renewal price", 1], ["Get two comparison quotes online"], ["Phone current insurer to ask for a better price"], ["Pay and save the new documents"]]);
   add({ title: "Book kids' dentist check-ups", zone_id: z["Kids"], deadline_type: "target", due_date: inDays(12) },
     [["Open the dentist's booking page on my phone"], ["Pick two after-school slots and book"]]);
-  add({ title: "Clear the garage", zone_id: z["House"], status: "designing", touched_at: ago(2) });
-  add({ title: "Fix the wobbly garden gate", zone_id: z["Garden"], touched_at: ago(16), created_at: ago(30) },
+  add({ title: "Clear the garage", zone_id: z["House"], status: "designing", touched_at: ago(2), do_date: inDays(3) });
+  add({ title: "Reply to school about the trip form", zone_id: z["Kids"], do_date: inDays(-1), postponed: 1 });
+  add({ title: "Order printer ink", zone_id: z["House"] });
+  add({ title: "Book boiler service", zone_id: z["House"], postponed: 3 });
+  add({ title: "Fix the wobbly garden gate", zone_id: z["Garden"], touched_at: ago(16), created_at: ago(30), do_date: inDays(2) },
     [["Sort out the gate"]]);
   add({ title: "Return the Amazon parcel", zone_id: z["House"], status: "done", completed_at: ago(1) },
     [["Print the returns label", 2], ["Drop it at the post office", 1]]);
@@ -135,7 +140,7 @@ export function useStore(user) {
 
     // Tasks
     addTask: (fields) => {
-      const t = { id: uid(), notes: "", consequence: "", deadline_type: "someday", due_date: null, status: "designing", created_at: now(), touched_at: now(), completed_at: null, ...fields };
+      const t = { id: uid(), notes: "", consequence: "", deadline_type: "someday", due_date: null, status: "ready", do_date: today(), postponed: 0, created_at: now(), touched_at: now(), completed_at: null, ...fields };
       setDb((d) => ({ ...d, tasks: [...d.tasks, t] }));
       remote(supabase?.from("tasks").insert(t));
       return t;
@@ -172,7 +177,25 @@ export function useStore(user) {
         remote(supabase?.from("tasks").update({ status: "done", completed_at: t }).eq("id", step.task_id));
         return "task-done";
       }
+      patch("tasks", step.task_id, { do_date: tomorrow() });
+      remote(supabase?.from("tasks").update({ do_date: tomorrow() }).eq("id", step.task_id));
       return "step-done";
+    },
+    // Finish a task that has no steps
+    completeTask: (task) => {
+      const t = now();
+      const c = { status: "done", completed_at: t, touched_at: t };
+      patch("tasks", task.id, c);
+      remote(supabase?.from("tasks").update(c).eq("id", task.id));
+      return "task-done";
+    },
+    // Move tasks to tomorrow, counting how often each has been put off
+    postpone: (tasks) => {
+      for (const task of tasks) {
+        const c = { do_date: tomorrow(), postponed: (task.postponed || 0) + 1 };
+        patch("tasks", task.id, c);
+        remote(supabase?.from("tasks").update(c).eq("id", task.id));
+      }
     },
     uncompleteStep: (step) => {
       patch("steps", step.id, { done: false, done_at: null });

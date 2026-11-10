@@ -198,3 +198,24 @@ textarea.input { resize: vertical; min-height: 70px; }
 .empty { text-align: center; color: var(--muted); padding: 40px 10px; }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 100px; background: var(--danger); color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 14px; z-index: 80; max-width: 90%; }
 .demo-bar { font-size: 12px; text-align: center; padding: 6px; background: var(--warn-soft); color: var(--warn); }
+
+/* Today: pick a task, then start */
+.pick-list { display: flex; flex-direction: column; gap: 8px; }
+.pick { display: flex; gap: 14px; align-items: center; text-align: left; width: 100%; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; transition: border-color 0.15s, box-shadow 0.15s; }
+.pick.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.pick .radio { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--faint); flex-shrink: 0; display: grid; place-items: center; }
+.pick.on .radio { border-color: var(--accent); }
+.pick.on .radio::after { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); }
+.pick .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.pick .title { font-size: 17px; }
+.pick .meta { display: flex; gap: 10px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+.pick .meta:empty { display: none; }
+.pick .late { color: var(--warn); }
+.pick.add { background: transparent; border-style: dashed; padding: 6px 16px; }
+.pick.add .radio.plus { border: 0; color: var(--faint); font-size: 22px; }
+.pick.add input { flex: 1; border: 0; background: transparent; outline: none; padding: 10px 0; font-size: 16px; }
+.start-bar { position: sticky; bottom: calc(env(safe-area-inset-bottom) + 84px); margin-top: 24px; }
+@media (min-width: 900px) { .start-bar { bottom: 24px; } }
+.btn.big { padding: 18px 22px; font-size: 17px; }
+.tick-big { width: 88px; height: 88px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-size: 42px; margin-bottom: 20px; animation: pop2 0.5s ease; }
+input.chip { padding: 6px 12px; font-size: 14px; }

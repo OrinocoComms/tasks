@@ -28,14 +28,14 @@ begin
   for t in
     execute 'select * from public.tasks_legacy where coalesce(completed,false) = false and coalesce(archived,false) = false and parent_id is null order by created_at'
   loop
-    insert into public.tasks (user_id, zone_id, title, notes, deadline_type, due_date, status, created_at, touched_at)
+    insert into public.tasks (user_id, zone_id, title, notes, deadline_type, due_date, status, do_date, created_at, touched_at)
     values (
       me, sort_zone, t.title,
       nullif(concat_ws(' · ',
         case when t.context = 'orinoco' then 'Was an Orinoco task' end,
         nullif(t.project, '')), ''),
       case when t.due_date is not null then 'target' else 'someday' end,
-      t.due_date, 'designing', t.created_at, now()
+      t.due_date, 'ready', null, t.created_at, now()
     ) returning id into new_id;
 
     execute 'insert into public.steps (user_id, task_id, title, position, done, done_at)
