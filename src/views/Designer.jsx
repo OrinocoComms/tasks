@@ -28,7 +28,7 @@ function ZonePicker({ zones, value, onChange }) {
   return (
     <div className="chips" style={{ margin: "0 0 18px", padding: 0, flexWrap: "wrap" }}>
       {[...zones].sort((a, b) => a.position - b.position).map((z) => (
-        <button key={z.id} type="button" className={`chip ${value === z.id ? "on" : ""}`} onClick={() => onChange(z.id)}>{z.emoji} {z.name}</button>
+        <button key={z.id} type="button" className={`chip ${value === z.id ? "on" : ""}`} onClick={() => onChange(z.id)}>{z.name}</button>
       ))}
     </div>
   );
@@ -174,7 +174,6 @@ function Design({ task, db, plan, actions, onClose, celebrate }) {
 
       {p?.staleness === "rethink" && (
         <div className="banner warn">
-          <span>🪑</span>
           <div className="grow">This has sat for {p.age} days. No judgement: it usually means the first step still isn't small enough. Let's shrink it.</div>
         </div>
       )}
@@ -240,7 +239,7 @@ function Design({ task, db, plan, actions, onClose, celebrate }) {
         <div style={{ marginTop: 14 }}>
           {!ai && (
             <button className="btn ghost wide" disabled={busy} onClick={() => runAi()}>
-              {busy ? "Thinking…" : items.some((s) => s.trim()) ? "✦ Check and shrink my steps" : "✦ Help me break it down"}
+              {busy ? "Thinking…" : items.some((s) => s.trim()) ? "Check and shrink my steps" : "Help me break it down"}
             </button>
           )}
           {aiError && <p className="small" style={{ color: "var(--danger)" }}>{isDemo ? aiError : `Couldn't reach the helper: ${aiError}`}</p>}

@@ -30,12 +30,12 @@ export default function Today({ db, actions, startSession }) {
 
   return (
     <div className="today">
-      <div className="kicker">{new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</div>
-      <h1>Today</h1>
-      <p className="sub">
-        {items.length === 0 ? (doneToday ? "All done for today. Nice." : "Nothing on today's list.") : `${items.length} to do. Pick where to start.`}
-      </p>
-      {items.length === 0 && tomorrowCount > 0 && <p className="small" style={{ marginTop: -12, marginBottom: 20 }}>{tomorrowCount} lined up for tomorrow.</p>}
+      {items.length === 0 && (
+        <div className="clear">
+          <h1>{doneToday ? "All done. Nice." : "Nothing to do."}</h1>
+          {tomorrowCount > 0 && <p className="sub">{tomorrowCount} lined up for tomorrow.</p>}
+        </div>
+      )}
 
       <div className="pick-list">
         {items.map(({ task, step }) => {
@@ -46,8 +46,8 @@ export default function Today({ db, actions, startSession }) {
               <span className="body">
                 <span className="title">{step ? step.title : task.title}</span>
                 <span className="meta">
-                  {step && <span>{zone(task.zone_id)?.emoji} {task.title}</span>}
-                  {!step && zone(task.zone_id) && <span>{zone(task.zone_id).emoji} {zone(task.zone_id).name}</span>}
+                  {step && <span>{task.title}</span>}
+                  {!step && zone(task.zone_id) && <span>{zone(task.zone_id).name}</span>}
                   {task.do_date < today && <span className="late">from earlier</span>}
                   {task.postponed >= 3 && <span className="late">moved {task.postponed}×</span>}
                 </span>
@@ -56,7 +56,7 @@ export default function Today({ db, actions, startSession }) {
           );
         })}
         <form className="pick add" onSubmit={add}>
-          <span className="radio plus">+</span>
+          <span className="radio plus" />
           <input placeholder="Add something for today" value={adding} onChange={(e) => setAdding(e.target.value)} />
         </form>
       </div>

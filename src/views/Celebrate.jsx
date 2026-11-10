@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 
 const LINES = ["Done. Nice.", "One less thing.", "That's a win.", "Look at you go.", "Ticked off.", "Lighter already.", "Momentum!"];
-const COLOURS = ["var(--accent)", "var(--warn)", "var(--danger)", "#7aa7d9", "#d9b44a"];
+const COLOURS = ["#e3936b", "#d5ddca", "#1e1c1b", "#edbfa8", "#a9b89a"];
 
 export function Burst({ onDone }) {
   const line = useMemo(() => LINES[Math.floor(Math.random() * LINES.length)], []);
@@ -26,7 +26,7 @@ export function BigWin({ task, steps, onClose }) {
   return (
     <div className="bigwin" onClick={onClose}>
       <div className="tick">✓</div>
-      <div className="kicker" style={{ color: "#fff", opacity: 0.8 }}>Task finished</div>
+      <div className="kicker" style={{ color: "inherit", opacity: 0.7 }}>Task finished</div>
       <h1>{task.title}</h1>
       <p>
         {steps.length > 1 ? `${steps.length} small steps` : "Done"}

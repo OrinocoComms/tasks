@@ -2,13 +2,11 @@ import { planLabel, stepsFor } from "../lib/plan.js";
 
 export default function TaskRow({ task, db, plan, onClick }) {
   const p = plan[task.id];
-  const zone = db.zones.find((z) => z.id === task.zone_id);
   const steps = stepsFor(task.id, db.steps);
   const label = planLabel(task, p);
   const stale = p?.staleness;
   return (
     <button className={`task ${stale === "stale" ? "stale" : ""} ${stale === "rethink" ? "rethink" : ""}`} onClick={onClick}>
-      <span className="emoji">{zone?.emoji || "·"}</span>
       <span className="body">
         <span className="title">{task.title}</span>
         <span className="meta">

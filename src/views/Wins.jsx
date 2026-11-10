@@ -57,7 +57,7 @@ export default function Wins({ db }) {
           <h2>{g.key}</h2>
           {g.items.map((e, i) => (
             <div key={i} className={`win ${e.kind}`}>
-              <span className="c">{e.kind === "task" ? "★" : "✓"}</span>
+              <span className={`c ${e.kind}`} />
               <div>{e.kind === "task" ? <b>{e.title}</b> : e.title}{e.from && <div className="small">{e.from}</div>}</div>
             </div>
           ))}

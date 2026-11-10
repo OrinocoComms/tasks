@@ -62,9 +62,9 @@ function Home({ user }) {
       <div className="app">
         <nav className="nav">
           <div className="brand">Little steps</div>
-          {TABS.map(([id, label, ic]) => (
+          {TABS.map(([id, label]) => (
             <button key={id} className={tab === id ? "on" : ""} onClick={() => setTab(id)}>
-              <span className="ic">{ic}</span>{label}
+              {label}
             </button>
           ))}
         </nav>
