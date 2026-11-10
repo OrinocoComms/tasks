@@ -261,3 +261,55 @@ input.chip { padding: 6px 12px; font-size: 14px; }
 .date-pill { margin-top: 6px; border: 0; background: var(--card); border-radius: 999px; padding: 4px 10px; font-size: 12px; color: var(--ink); }
 .date-pill.empty { color: var(--faint); background: transparent; padding-left: 0; }
 .sheet .datefield .seg { background: var(--card); }
+
+/* Date picker */
+.title-row { display: flex; align-items: center; gap: 10px; }
+.title-row .input.big { flex: 1; min-width: 0; }
+.dp { position: relative; display: inline-flex; flex-shrink: 0; }
+.dp-trigger { display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--faint); padding: 6px; border-radius: 10px; font-size: 13px; white-space: nowrap; }
+.dp-trigger:hover { background: var(--card); color: var(--ink); }
+.dp-trigger.set { color: var(--ink); background: var(--card); padding: 6px 10px; }
+.dp-backdrop { position: fixed; inset: 0; z-index: 44; }
+.dp-pop { position: absolute; top: calc(100% + 6px); right: 0; z-index: 45; width: 300px; background: var(--card); border-radius: 16px; box-shadow: 0 12px 40px rgba(30,28,27,0.16), 0 0 0 1px var(--line); padding: 16px 14px 8px; animation: fade 0.12s; }
+.dp.left .dp-pop { right: auto; left: 0; }
+.dp-fields { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+.dp-add { flex: 1; border: 0; background: none; color: var(--muted); font-size: 14px; font-weight: 500; text-align: left; padding: 8px 4px; }
+.dp-field { flex: 1; display: flex; align-items: center; border: 1.5px solid var(--line); border-radius: 10px; padding: 0 4px 0 10px; min-width: 0; }
+.dp-field.on { border-color: var(--accent); }
+.dp-field input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; padding: 8px 0; font-size: 15px; }
+.dp-x { border: 0; background: none; color: var(--faint); font-size: 18px; padding: 2px 6px; line-height: 1; }
+.dp-head { display: flex; align-items: center; justify-content: space-between; padding: 2px 2px 8px; font-weight: 500; font-size: 15px; }
+.dp-head button { border: 0; background: none; font-size: 22px; color: var(--muted); padding: 0 8px; line-height: 1; }
+.dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 2px; }
+.dp-grid .dow { text-align: center; font-size: 12px; color: var(--muted); padding: 4px 0 6px; font-weight: 500; }
+.dp-grid .day { position: relative; border: 0; background: none; height: 36px; font-size: 14px; color: var(--ink); border-radius: 50%; display: grid; place-items: center; font-variant-numeric: tabular-nums; }
+.dp-grid .day.wk { color: var(--muted); }
+.dp-grid .day.out { color: var(--faint); }
+.dp-grid .day:hover { background: var(--paper); }
+.dp-grid .day.today { box-shadow: inset 0 0 0 1.5px var(--ink); font-weight: 600; }
+.dp-grid .day.between { background: var(--accent-soft); border-radius: 0; }
+.dp-grid .day.sel { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.dp-foot { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); margin-top: 8px; padding-top: 4px; }
+.dp-foot .toggle { padding: 6px 0; font-size: 13px; }
+.dp-foot .toggle:disabled { opacity: 0.4; }
+.sub .dp { margin-top: -4px; }
+
+textarea.input.big { resize: none; overflow: hidden; line-height: 1.15; display: block; }
+.title-row { align-items: flex-start; }
+.title-row .dp { margin-top: 2px; }
+@media (max-width: 600px) {
+  .dp-backdrop { background: rgba(30,28,27,0.25); }
+  .dp-pop { position: fixed; top: auto; right: auto; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 16px); transform: translateX(-50%); width: min(360px, calc(100vw - 24px)); }
+  .dp.left .dp-pop { left: 50%; }
+}
+
+/* Round day markers whatever the column width */
+.dp-grid .day { border-radius: 0; isolation: isolate; }
+.dp-grid .day:hover { background: none; }
+.dp-grid .day::before { content: ""; position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; z-index: -1; }
+.dp-grid .day:hover::before { background: var(--paper); }
+.dp-grid .day.today { box-shadow: none; }
+.dp-grid .day.today::before { box-shadow: inset 0 0 0 1.5px var(--ink); }
+.dp-grid .day.sel { background: none; }
+.dp-grid .day.sel::before { background: var(--accent); box-shadow: none; }
+.dp-grid .day.between { background: var(--accent-soft); }

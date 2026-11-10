@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { aiBreakdown, isDemo } from "../lib/data.js";
 import { planLabel, stepsFor, toDateStr } from "../lib/plan.js";
-import DateField from "./DateField.jsx";
+import DatePicker from "./DatePicker.jsx";
 
 const TESTS = [
   ["action", "One physical action", "You can picture yourself doing it: open, find, write, phone…"],
@@ -15,6 +15,9 @@ export default function Designer({ task, zoneId, db, plan, actions, onClose, onC
   if (!task) return <NewTask db={db} zoneId={zoneId} actions={actions} onClose={onClose} onCreated={onCreated} />;
   return <Design task={task} db={db} plan={plan} actions={actions} onClose={onClose} celebrate={celebrate} />;
 }
+
+// Let a textarea grow to fit its text
+const grow = (el) => { if (el) { el.style.height = "auto"; el.style.height = el.scrollHeight + "px"; } };
 
 function Sheet({ children, onClose }) {
   return (
@@ -63,8 +66,11 @@ function NewTask({ db, zoneId, actions, onClose, onCreated }) {
     <Sheet onClose={onClose}>
       <form onSubmit={submit}>
         <ZoneSelect zones={db.zones} value={zone} onChange={setZone} />
-        <input className="input big" autoFocus placeholder="What needs doing?" value={title} onChange={(e) => setTitle(e.target.value)} style={{ margin: "6px 0 18px" }} />
-        <DateField start={dates.start} end={dates.end} onChange={(d) => { setDates(d); setHard(d.hard); }} hard={hard} showHard />
+        <div className="title-row" style={{ margin: "6px 0 18px" }}>
+          <textarea className="input big" rows={1} autoFocus placeholder="What needs doing?" value={title} ref={grow}
+            onChange={(e) => setTitle(e.target.value.replace(/\n/g, ""))} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), title.trim() && (create(), onClose()))} />
+          <DatePicker start={dates.start} end={dates.end} onChange={(d) => { setDates(d); setHard(d.hard); }} hard={hard} showHard />
+        </div>
         <div className="row" style={{ marginTop: 22 }}>
           <button className="btn" style={{ flex: 1 }} disabled={!title.trim()}>Save</button>
           <button type="button" className="btn ghost" disabled={!title.trim()} onClick={() => onCreated(create())}>Add subtasks →</button>
@@ -149,18 +155,13 @@ function Design({ task, db, plan, actions, onClose, celebrate }) {
         <ZoneSelect zones={db.zones} value={task.zone_id} onChange={(id) => update({ zone_id: id })} />
         <button className="btn quiet sm" onClick={close}>Done</button>
       </div>
-      <input className="input big" defaultValue={task.title} onBlur={(e) => e.target.value.trim() && e.target.value !== task.title && update({ title: e.target.value.trim() })} style={{ margin: "4px 0 14px" }} />
-
-      {!isDone && (
-        <>
-          <DateField
-            start={task.do_date} end={task.due_date}
-            onChange={(d) => update(datesToTask(d, d.hard))}
-            hard={hard} showHard
-          />
-          {label && <div style={{ marginTop: 10 }}><span className={`pill ${label.tone}`}>{label.text}</span></div>}
-        </>
-      )}
+      <div className="title-row" style={{ margin: "4px 0 6px" }}>
+        <textarea className="input big" rows={1} defaultValue={task.title} ref={grow} onInput={(e) => grow(e.target)}
+          onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), e.target.blur())}
+          onBlur={(e) => e.target.value.trim() && e.target.value !== task.title && update({ title: e.target.value.trim() })} />
+        {!isDone && <DatePicker start={task.do_date} end={task.due_date} onChange={(d) => update(datesToTask(d, d.hard))} hard={hard} showHard />}
+      </div>
+      {!isDone && label && <div style={{ marginTop: 4 }}><span className={`pill ${label.tone}`}>{label.text}{hard ? " · hard deadline" : ""}</span></div>}
 
       {p?.staleness === "rethink" && (
         <div className="banner warn" style={{ marginTop: 14 }}>
@@ -184,8 +185,8 @@ function Design({ task, db, plan, actions, onClose, celebrate }) {
               <textarea className="t" rows={1} value={s.title} placeholder="Subtask"
                 ref={(el) => { if (el) { el.style.height = "auto"; el.style.height = el.scrollHeight + "px"; } }}
                 onChange={(e) => setStep(i, { title: e.target.value.replace(/\n/g, " ") })} />
-              <DateField compact start={s.do_date} end={s.due_date} onChange={({ start, end }) => setStep(i, { do_date: start, due_date: end })} />
             </div>
+            <DatePicker start={s.do_date} end={s.due_date} onChange={({ start, end }) => setStep(i, { do_date: start, due_date: end })} />
             {i > 0 && <button className="x" title="Move up" onClick={() => { const l = [...items]; [l[i - 1], l[i]] = [l[i], l[i - 1]]; setStepList(l); }}>↑</button>}
             <button className="x" title="Remove" onClick={() => setStepList(items.filter((_, j) => j !== i))}>✕</button>
           </div>
