@@ -113,7 +113,6 @@ function OutcomeView({ db, actions, outcome }) {
             <span className="small num" style={{ fontSize: 14 }}>{p.left ? `${fmtMins(p.left)} left` : p.total ? "All done" : ""}</span>
           </div>
           <div style={{ padding: "0 4px" }}>
-            {tasks.length === 0 && <div className="empty" style={{ borderTop: "1px solid var(--line)" }}>Add the first task to get this moving.</div>}
             {tasks.map((t) => {
               const kids = childrenOf(db.items, t.id);
               const isOpen = !!open[t.id];
