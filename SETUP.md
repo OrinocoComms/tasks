@@ -1,23 +1,31 @@
-# Little steps: setup
+# Setting up the app
 
-One-off setup. You need to do it once, in this order. Everything is in the Supabase dashboard; no command line needed.
+Do this once, in order. Everything is in the Supabase dashboard; no command line needed.
+The app uses the `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` settings that are already in Vercel.
 
-## 1. Create the new tables
-Supabase → **SQL Editor** → New query → paste all of `supabase/01-schema.sql` → **Run**.
-Your old tasks table is renamed `tasks_legacy`, not deleted.
+## 1. Create the tables
+Supabase → **SQL Editor** → **New query** → paste all of `supabase/01-schema.sql` → **Run**.
+Nothing existing is deleted.
 
-## 2. Add the AI breakdown helper
+## 2. Add the voice helper (shortens what you say to a 5-word title)
 1. Supabase → **Edge Functions** → **Deploy a new function** → **Via editor**.
-2. Name it exactly `breakdown`.
-3. Replace the sample code with everything in `supabase/functions/breakdown/index.ts` → **Deploy**.
-4. Edge Functions → **Secrets** → add a secret named `ANTHROPIC_API_KEY` with your new key as the value.
+2. Name it exactly `condense`.
+3. Replace the sample code with everything in `supabase/functions/condense/index.ts` → **Deploy**.
+4. Edge Functions → **Secrets** → add `ANTHROPIC_API_KEY` with your Claude Console key as the value.
 
-## 3. Sign in and bring your old tasks across
-1. Open the app and choose **Create an account**. If it asks you to confirm by email, click the link in the email, then come back and sign in.
-2. Then Supabase → SQL Editor → paste `supabase/02-import-old-tasks.sql` → **Run**. Your open tasks appear in a **To sort** zone.
-3. Optional but recommended: Supabase → **Authentication** → **Sign In / Providers** → turn off **Allow new users to sign up**, so nobody else can make an account.
+If this isn't set up, voice still works: the title just uses the first five words.
+
+## 3. Sign in
+Open the app → **First time? Create an account**. If it asks you to confirm by email, click the link, then sign in.
+Your eight areas of focus are created automatically.
+
+## 4. Optional: bring your old tasks across
+Supabase → SQL Editor → paste `supabase/02-import-old-tasks.sql` → **Run**. They appear in **Unallocated**.
+
+## 5. Lock it to you
+Supabase → **Authentication** → **Sign In / Providers** → turn off **Allow new users to sign up**.
 
 ## Notes
-- The app uses the same `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` settings already in Vercel.
-- Add `?demo` to the address to try it with sample data that only lives in that browser.
-- Install it: on iPhone, Safari → Share → **Add to Home Screen**. On desktop Chrome, use the install icon in the address bar.
+- Add `?demo` to the address to try the app with sample data that only lives in that browser.
+- Install it on your phone: Safari → Share → **Add to Home Screen** (iPhone), or Chrome → **Install app** (Android/desktop).
+- The daily limit (1 hour by default) can be changed under the third tab.

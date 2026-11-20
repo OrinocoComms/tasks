@@ -1,104 +1,102 @@
 -- STEP 1 of setup. Supabase dashboard → SQL Editor → New query → paste all of this → Run.
--- Safe to run once. It keeps your old tasks (renamed to tasks_legacy) so nothing is lost.
+-- Creates the app's tables. Nothing existing is deleted: older tables (tasks, zones, steps...) are left alone.
 
--- Keep the old table out of the way
-do $$
-begin
-  if exists (select 1 from information_schema.tables where table_schema = 'public' and table_name = 'tasks')
-     and not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'tasks' and column_name = 'zone_id') then
-    alter table public.tasks rename to tasks_legacy;
-  end if;
-end $$;
-
--- Zones: House, Garden, Kids...
-create table if not exists public.zones (
+-- Areas of focus: House, Health, Kids...
+create table if not exists public.areas (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users on delete cascade,
   name text not null,
-  emoji text,
+  icon text not null default 'general',
   position int not null default 0,
   created_at timestamptz not null default now()
 );
 
--- Tasks
-create table if not exists public.tasks (
+-- Outcomes: bigger goals with tasks under them
+create table if not exists public.outcomes (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users on delete cascade,
-  zone_id uuid references public.zones on delete set null,
+  area_id uuid references public.areas on delete set null,
   title text not null,
-  notes text,
-  deadline_type text not null default 'someday' check (deadline_type in ('hard', 'target', 'someday')),
+  description text,
   due_date date,
-  consequence text,               -- "what happens if it isn't done?"
-  status text not null default 'ready' check (status in ('designing', 'ready', 'done')),
-  do_date date default current_date,  -- the day it sits on your Today list
-  postponed int not null default 0,   -- how many times it's been moved to tomorrow
-  created_at timestamptz not null default now(),
-  touched_at timestamptz not null default now(),  -- last real progress or redesign
-  completed_at timestamptz
+  achieved_at timestamptz,
+  created_at timestamptz not null default now()
 );
 
--- Steps: the digestible sub-tasks
-create table if not exists public.steps (
+-- Items: tasks and their subtasks (a subtask has parent_id set)
+create table if not exists public.items (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users on delete cascade,
-  task_id uuid not null references public.tasks on delete cascade,
+  parent_id uuid references public.items on delete cascade,
+  outcome_id uuid references public.outcomes on delete set null,
+  area_id uuid references public.areas on delete set null,
   title text not null,
+  description text,
+  priority text not null default 'could' check (priority in ('must', 'could')),
+  start_date date,             -- the day it lands on Today (or the start of a range)
+  due_date date,               -- finish date when it's a range
+  est_mins int,                -- the item's own time (not counting its subtasks)
+  repeat jsonb,                -- e.g. {"freq":"weekly","days":[5]}
+  moved_count int not null default 0,
+  from_voice boolean not null default false,
   position int not null default 0,
-  do_date date,   -- optional: its own start date (or the only date)
-  due_date date,  -- optional: its own finish date
   done boolean not null default false,
   done_at timestamptz,
   created_at timestamptz not null default now()
 );
 
--- Daily sessions
-create table if not exists public.sessions (
+-- Timer sessions (how long things actually took)
+create table if not exists public.timer_sessions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users on delete cascade,
-  started_at timestamptz not null default now(),
-  planned_minutes int not null default 15,
-  actual_seconds int not null default 0,
-  steps_done int not null default 0
+  item_id uuid references public.items on delete cascade,
+  seconds int not null default 0,
+  finished_at timestamptz not null default now()
 );
 
--- (in case the tasks table was created by an earlier version of this file)
-alter table public.tasks add column if not exists do_date date default current_date;
-alter table public.tasks add column if not exists postponed int not null default 0;
-alter table public.steps add column if not exists do_date date;
-alter table public.steps add column if not exists due_date date;
+-- One row of settings per person
+create table if not exists public.settings (
+  user_id uuid primary key default auth.uid() references auth.users on delete cascade,
+  daily_limit_mins int not null default 60
+);
 
-create index if not exists tasks_user_idx on public.tasks (user_id);
-create index if not exists steps_task_idx on public.steps (task_id);
-create index if not exists sessions_user_idx on public.sessions (user_id, started_at);
+create index if not exists items_user_idx on public.items (user_id, done);
+create index if not exists items_parent_idx on public.items (parent_id);
+create index if not exists outcomes_user_idx on public.outcomes (user_id);
 
--- Only you can see your own data
-alter table public.zones enable row level security;
-alter table public.tasks enable row level security;
-alter table public.steps enable row level security;
-alter table public.sessions enable row level security;
+-- Only you can see or change your own data
+alter table public.areas enable row level security;
+alter table public.outcomes enable row level security;
+alter table public.items enable row level security;
+alter table public.timer_sessions enable row level security;
+alter table public.settings enable row level security;
 
-drop policy if exists "own zones" on public.zones;
-create policy "own zones" on public.zones for all using (user_id = auth.uid()) with check (user_id = auth.uid());
-drop policy if exists "own tasks" on public.tasks;
-create policy "own tasks" on public.tasks for all using (user_id = auth.uid()) with check (user_id = auth.uid());
-drop policy if exists "own steps" on public.steps;
-create policy "own steps" on public.steps for all using (user_id = auth.uid()) with check (user_id = auth.uid());
-drop policy if exists "own sessions" on public.sessions;
-create policy "own sessions" on public.sessions for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists "own areas" on public.areas;
+create policy "own areas" on public.areas for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists "own outcomes" on public.outcomes;
+create policy "own outcomes" on public.outcomes for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists "own items" on public.items;
+create policy "own items" on public.items for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists "own sessions" on public.timer_sessions;
+create policy "own sessions" on public.timer_sessions for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists "own settings" on public.settings;
+create policy "own settings" on public.settings for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 
--- Lock the old table too (the app no longer uses it)
+-- Lock down any older tables from earlier versions of the app
 do $$
+declare t text;
 begin
-  if exists (select 1 from information_schema.tables where table_schema = 'public' and table_name = 'tasks_legacy') then
-    execute 'alter table public.tasks_legacy enable row level security';
-  end if;
+  foreach t in array array['tasks', 'tasks_legacy', 'zones', 'steps', 'sessions'] loop
+    if exists (select 1 from information_schema.tables where table_schema = 'public' and table_name = t) then
+      execute format('alter table public.%I enable row level security', t);
+    end if;
+  end loop;
 end $$;
 
 -- Live sync between phone and desktop
 do $$
 begin
-  begin alter publication supabase_realtime add table public.zones; exception when others then null; end;
-  begin alter publication supabase_realtime add table public.tasks; exception when others then null; end;
-  begin alter publication supabase_realtime add table public.steps; exception when others then null; end;
+  begin alter publication supabase_realtime add table public.areas; exception when others then null; end;
+  begin alter publication supabase_realtime add table public.outcomes; exception when others then null; end;
+  begin alter publication supabase_realtime add table public.items; exception when others then null; end;
 end $$;
