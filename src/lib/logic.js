@@ -157,5 +157,5 @@ export function nextOccurrence(r, afterStr) {
 export const AREA_ICONS = ["house", "health", "kids", "garden", "finances", "general", "leisure", "car"];
 export const DEFAULT_AREAS = [
   ["House", "house"], ["Health", "health"], ["Kids", "kids"], ["Garden", "garden"],
-  ["Finances", "finances"], ["General", "general"], ["Leisure", "leisure"], ["Car", "car"],
+  ["Finances", "finances"], ["Leisure", "leisure"], ["General", "general"], ["Car", "car"],
 ];
