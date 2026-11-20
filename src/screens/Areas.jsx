@@ -9,7 +9,7 @@ export default function Areas({ db, actions }) {
     <div className="page">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "calc(env(safe-area-inset-top) + 36px) 20px 20px 22px" }}>
         <h1 className="h1">Areas of focus</h1>
-        <button className="fab" aria-label="Add an area of focus" onClick={() => setAdding(true)}><Icon name="plus" size={22} width={2} color="#f2efea" /></button>
+        <button className="fab" aria-label="Add an area of focus" onClick={() => setAdding(true)}><Icon name="plus" size={22} width={2} color="var(--paper)" /></button>
       </div>
       <div className="scroll" style={{ padding: "0 20px 112px" }}>
         <div className="grid2">

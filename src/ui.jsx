@@ -19,7 +19,7 @@ export function Icon({ name, size = 20, width = 1.8, color }) {
     case "warn": return <svg {...p}><path d="M12 3.5L2.5 20h19z" /><path d="M12 10v4.5" /><path d="M12 17.4v.1" /></svg>;
     case "play": return <svg width={size} height={size} viewBox="0 0 24 24" fill={color || "currentColor"} aria-hidden="true"><path d="M7 4.5v15l13-7.5z" /></svg>;
     case "pause": return <svg width={size} height={size} viewBox="0 0 24 24" fill={color || "currentColor"} aria-hidden="true"><rect x="6" y="4.5" width="4" height="15" rx="1.2" /><rect x="14" y="4.5" width="4" height="15" rx="1.2" /></svg>;
-    case "bolt": return <svg width={size} height={size} viewBox="0 0 24 24" fill="#e3936b" stroke="#1e1c1b" strokeWidth="1.4" strokeLinejoin="round" aria-hidden="true"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z" /></svg>;
+    case "bolt": return <svg width={size} height={size} viewBox="0 0 24 24" fill="var(--salmon)" stroke="var(--ink)" strokeWidth="1.4" strokeLinejoin="round" aria-hidden="true"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z" /></svg>;
     default: return null;
   }
 }
@@ -43,7 +43,7 @@ export function Tick({ item, onClick, small }) {
   return (
     <button type="button" className={`tick ${on ? "on" : ""} ${item.priority === "must" ? "must" : ""} ${small ? "sm" : ""}`} onClick={onClick}
       aria-pressed={on} aria-label={`${on ? "Mark not done" : "Mark done"}: ${item.title}`}>
-      <span>{on && <Icon name="check" size={small ? 11 : 13} width={3} color="#f2efea" />}</span>
+      <span>{on && <Icon name="check" size={small ? 11 : 13} width={3} color="var(--paper)" />}</span>
     </button>
   );
 }

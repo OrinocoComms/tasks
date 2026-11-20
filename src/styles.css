@@ -130,3 +130,73 @@ textarea.input { resize: none; }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 100px; background: var(--must); color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 14px; z-index: 80; max-width: 90%; }
 .demo-bar { font-size: 12px; text-align: center; padding: 6px; background: #d5ddca; }
 .empty { color: var(--muted); font-size: 15px; padding: 14px; }
+
+/* ---------- Nokia 3310 theme ---------- */
+html[data-theme="nokia"] {
+  --paper: #c4d29f;
+  --card: #c4d29f;
+  --ink: #232b18;
+  --muted: #4a5634;
+  --soft: #37412a;
+  --faint: #76845a;
+  --line: #9cad74;
+  --line2: #a8b880;
+  --must: #232b18;
+  --salmon: #232b18;
+  --rust-soft: #aebf86;
+  --done-bg: #b3c38d;
+  --font: "Pixelify Sans", ui-monospace, monospace;
+}
+html[data-theme="nokia"] body { -webkit-font-smoothing: none; font-smooth: never; }
+/* LCD pixel grid */
+html[data-theme="nokia"] body::after {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 200;
+  background:
+    repeating-linear-gradient(0deg, rgba(35,43,24,0.06) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(35,43,24,0.05) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 55%, rgba(35,43,24,0.12));
+}
+html[data-theme="nokia"] *, html[data-theme="nokia"] *::before { border-radius: 0 !important; box-shadow: none !important; }
+html[data-theme="nokia"] .h1 { font-weight: 600; letter-spacing: 0; text-transform: uppercase; font-size: 28px; }
+html[data-theme="nokia"] .kicker, html[data-theme="nokia"] .pillbtn .lbl { letter-spacing: 0.04em; }
+
+/* Boxes: flat LCD with a 2px pixel outline */
+html[data-theme="nokia"] .details,
+html[data-theme="nokia"] .tile,
+html[data-theme="nokia"] .pillbtn,
+html[data-theme="nokia"] .roundbtn,
+html[data-theme="nokia"] .chip,
+html[data-theme="nokia"] .input,
+html[data-theme="nokia"] .dialog,
+html[data-theme="nokia"] .sheet,
+html[data-theme="nokia"] .nav a,
+html[data-theme="nokia"] .panel,
+html[data-theme="nokia"] .seg { background: var(--paper); border: 2px solid var(--ink); }
+html[data-theme="nokia"] .sheet { border-bottom: 0; }
+
+/* Buttons: inverted "selected" bar, like the 3310 menu */
+html[data-theme="nokia"] .btn,
+html[data-theme="nokia"] .fab,
+html[data-theme="nokia"] .chip.on,
+html[data-theme="nokia"] .nav a.on { background: var(--ink); color: var(--paper); border: 2px solid var(--ink); text-transform: uppercase; letter-spacing: 0.04em; }
+html[data-theme="nokia"] .btn.white { background: var(--paper); color: var(--ink); }
+html[data-theme="nokia"] .btn.quiet { background: transparent; border: 0; color: var(--soft); text-transform: none; }
+html[data-theme="nokia"] .btn.salmon { background: var(--ink); color: var(--paper); }
+html[data-theme="nokia"] .btn.salmon svg { fill: var(--paper); }
+html[data-theme="nokia"] .btn.off { background: var(--line2); color: var(--faint); border-color: var(--faint); }
+html[data-theme="nokia"] .alert { background: var(--ink); color: var(--paper); }
+html[data-theme="nokia"] .alert button { background: var(--paper); color: var(--ink); }
+html[data-theme="nokia"] .alert .ic { background: transparent; }
+html[data-theme="nokia"] .toast { background: var(--ink); color: var(--paper); }
+html[data-theme="nokia"] .scrim { background: rgba(35,43,24,0.35); }
+html[data-theme="nokia"] .demo-bar { background: var(--ink); color: var(--paper); }
+html[data-theme="nokia"] .nav { border-top: 2px solid var(--ink); }
+
+/* Priority dots become pixel squares */
+html[data-theme="nokia"] .dot { border: 2px solid var(--ink); background: transparent; }
+html[data-theme="nokia"] .dot.must { background: var(--ink); }
+html[data-theme="nokia"] .input.title { border: 0; text-transform: none; }
+html[data-theme="nokia"] .tick span { border: 2px solid var(--ink); }
+html[data-theme="nokia"] .seg button[aria-pressed="true"], html[data-theme="nokia"] .seg button.on { background: var(--ink); color: var(--paper); }
+html[data-theme="nokia"] .seg button.on .dot { border-color: var(--paper); }
+html[data-theme="nokia"] .seg button.on .dot.must { background: var(--paper); }

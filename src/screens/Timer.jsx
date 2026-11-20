@@ -65,7 +65,7 @@ export default function Timer({ db, actions, id }) {
     return (
       <div className="page" style={{ justifyContent: "center", alignItems: "center", textAlign: "center", padding: "0 32px 40px", gap: 10 }}>
         <div style={{ width: 112, height: 112, borderRadius: "50%", background: "var(--ink)", display: "grid", placeItems: "center", animation: "doneglow 1.2s ease-out", marginBottom: 18 }}>
-          <Icon name="check" size={50} width={2.6} color="#f2efea" />
+          <Icon name="check" size={50} width={2.6} color="var(--paper)" />
         </div>
         <span className="kicker">Done</span>
         <h1 className="h1" style={{ fontSize: 30 }}>{item.title}</h1>
@@ -102,7 +102,7 @@ export default function Timer({ db, actions, id }) {
         <h1 className="h1" style={{ margin: "8px 0 0", fontSize: 30, lineHeight: 1.15 }}>{item.title}</h1>
         <button onClick={playPause} aria-label={t.running ? "Pause" : elapsed ? "Resume" : "Start"}
           style={{ marginTop: 44, width: 152, height: 152, border: 0, borderRadius: "50%", background: "var(--ink)", display: "grid", placeItems: "center", boxShadow: "0 14px 34px rgba(30,28,27,0.22)" }}>
-          {t.running ? <Icon name="pause" size={46} color="#f2efea" /> : <span style={{ marginLeft: 6, display: "grid" }}><Icon name="play" size={50} color="#f2efea" /></span>}
+          {t.running ? <Icon name="pause" size={46} color="var(--paper)" /> : <span style={{ marginLeft: 6, display: "grid" }}><Icon name="play" size={50} color="var(--paper)" /></span>}
         </button>
         <div role="timer" className="num" style={{ marginTop: 36, fontSize: 64, fontWeight: 500, letterSpacing: "-0.03em", lineHeight: 1, color: over ? "var(--must)" : "var(--ink)" }}>{clock}</div>
         <span style={{ marginTop: 10, fontSize: 14, color: over ? "var(--must)" : "var(--muted)" }}>

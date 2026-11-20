@@ -38,7 +38,7 @@ export function useCompleter(db, actions) {
         <div className="scrim center" onClick={() => setAchieved(null)}>
           <div className="dialog" role="alertdialog" aria-label="Outcome achieved" style={{ alignItems: "center", textAlign: "center", padding: "32px 22px 20px" }}>
             <div style={{ width: 96, height: 96, borderRadius: "50%", background: "var(--ink)", display: "grid", placeItems: "center", animation: "doneglow 1.2s ease-out", marginBottom: 12 }}>
-              <Icon name="check" size={44} width={2.6} color="#f2efea" />
+              <Icon name="check" size={44} width={2.6} color="var(--paper)" />
             </div>
             <span className="kicker">Outcome achieved</span>
             <span className="h1" style={{ fontSize: 28 }}>{achieved.title}</span>

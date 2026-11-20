@@ -222,12 +222,30 @@ function Settings({ db, actions, onClose }) {
             <button key={n} className={`chip ${day === n ? "on" : "outline"}`} aria-pressed={day === n} onClick={() => actions.setSettings({ review_day: n })}>{name.slice(0, 3)}</button>
           ))}
         </div>
+        <span className="kicker" style={{ marginTop: 8 }}>Look</span>
+        <ThemeSwitch />
         <div style={{ height: 8 }} />
         {isDemo
           ? <button className="btn white" onClick={resetDemo}>Reset the sample data</button>
           : <button className="btn white" onClick={() => supabase.auth.signOut()}>Sign out</button>}
         <button className="btn quiet" onClick={onClose}>Close</button>
       </div>
+    </div>
+  );
+}
+
+function ThemeSwitch() {
+  const [theme, setTheme] = useState(document.documentElement.dataset.theme || "classic");
+  const pick = (t) => {
+    document.documentElement.dataset.theme = t;
+    try { localStorage.setItem("dst-theme", t); } catch { /* ignore */ }
+    setTheme(t);
+  };
+  return (
+    <div style={{ display: "flex", gap: 6 }}>
+      {[["classic", "Classic"], ["nokia", "Nokia 3310"]].map(([k, label]) => (
+        <button key={k} className={`chip ${theme === k ? "on" : "outline"}`} aria-pressed={theme === k} onClick={() => pick(k)}>{label}</button>
+      ))}
     </div>
   );
 }

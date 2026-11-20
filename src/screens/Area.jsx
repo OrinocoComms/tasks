@@ -19,7 +19,7 @@ export default function Area({ db, actions, id }) {
     <div className="page">
       <div className="topbar" style={{ justifyContent: "space-between", paddingRight: 20 }}>
         <Back href="#/areas" label="Back to Areas of focus" />
-        <button className="fab" aria-label={`Add to ${area.name}`} onClick={() => setAdding(true)}><Icon name="plus" size={22} width={2} color="#f2efea" /></button>
+        <button className="fab" aria-label={`Add to ${area.name}`} onClick={() => setAdding(true)}><Icon name="plus" size={22} width={2} color="var(--paper)" /></button>
       </div>
       <div className="scroll" style={{ padding: "0 20px 112px", gap: 22 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -70,7 +70,7 @@ export default function Area({ db, actions, id }) {
             </button>
             {showAchieved && achieved.map((o) => (
               <a key={o.id} href={`#/outcome/${o.id}`} style={{ display: "flex", alignItems: "center", gap: 12, background: "var(--done-bg)", borderRadius: 18, padding: "14px 16px", textDecoration: "none" }}>
-                <span style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--ink)", display: "grid", placeItems: "center", flexShrink: 0 }}><Icon name="check" size={13} width={3} color="#f2efea" /></span>
+                <span style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--ink)", display: "grid", placeItems: "center", flexShrink: 0 }}><Icon name="check" size={13} width={3} color="var(--paper)" /></span>
                 <span style={{ flex: 1, fontSize: 15, color: "var(--soft)" }}>{o.title}</span>
                 <span className="small" style={{ fontSize: 12 }}>{new Date(o.achieved_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span>
               </a>

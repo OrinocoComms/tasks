@@ -114,7 +114,7 @@ export default function Task({ db, actions, id, query }) {
                 } else setRepeatOpen(!repeatOpen);
               }}
               style={{ width: 42, height: 42, flexShrink: 0, border: 0, borderRadius: "50%", background: repeats ? "var(--ink)" : "var(--card)", display: "grid", placeItems: "center" }}>
-              <Icon name="repeat" size={18} color={repeats ? "#f2efea" : "#1e1c1b"} />
+              <Icon name="repeat" size={18} color={repeats ? "var(--paper)" : "var(--ink)"} />
             </button>
           </div>
         </div>
@@ -220,7 +220,7 @@ export default function Task({ db, actions, id, query }) {
         ) : item.done ? (
           <button className="btn white" onClick={() => toggle(item)}>Done · tap to reopen</button>
         ) : openKids.length ? (
-          <button className="btn salmon off" aria-disabled="true"><Icon name="play" size={18} color="#8a847c" />Start</button>
+          <button className="btn salmon off" aria-disabled="true"><Icon name="play" size={18} color="var(--faint)" />Start</button>
         ) : (
           <a className="btn salmon" href={`#/timer/${item.id}`}><Icon name="play" size={18} />Start</a>
         )}

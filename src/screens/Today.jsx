@@ -57,7 +57,7 @@ export default function Today({ db, actions }) {
             style={{ height: 48, border: 0, borderRadius: 999, background: "var(--card)", padding: "0 14px 0 12px", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 600 }}>
             <Icon name="bolt" size={18} />5 min
           </button>
-          <button className="fab" aria-label="Add an outcome or task" onClick={() => setSheet("add")}><Icon name="plus" size={22} width={2} color="#f2efea" /></button>
+          <button className="fab" aria-label="Add an outcome or task" onClick={() => setSheet("add")}><Icon name="plus" size={22} width={2} color="var(--paper)" /></button>
         </div>
       </div>
 
@@ -175,7 +175,7 @@ function Rebalance({ db, actions, limit, onClose }) {
           {movedHere.map((snap) => (
             <div key={snap.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 6px 10px 12px", borderTop: "1px solid var(--line)" }}>
               <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-                <span style={{ fontSize: 15, color: "#8a847c" }}>{snap.title}</span>
+                <span style={{ fontSize: 15, color: "var(--faint)" }}>{snap.title}</span>
                 <span className="small" style={{ fontSize: 12 }}>Moved to {dateRange(snap.newDate)}</span>
               </div>
               <button className="btn quiet" style={{ width: "auto", textDecoration: "underline" }} onClick={() => undo(snap)}>Undo</button>
