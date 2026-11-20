@@ -1,4 +1,4 @@
-import { openPicker } from "../ui.jsx";
+import { CalendarSheet } from "../Calendar.jsx";
 import { useEffect, useRef, useState } from "react";
 import {
   addDays, doneToday, fmtMins, plannedMins, quickWins, todayItems, todayStr, unallocated, dateRange,
@@ -233,17 +233,21 @@ function Rebalance({ db, actions, limit, onClose }) {
 }
 
 function DateButton({ label, onPick }) {
+  const [open, setOpen] = useState(false);
   return (
-    <label aria-label={label} style={{ position: "relative", width: 36, height: 36, borderRadius: "50%", background: "var(--paper)", display: "grid", placeItems: "center", flexShrink: 0, cursor: "pointer" }}>
-      <Icon name="cal" size={16} width={1.6} />
-      <input type="date" onClick={openPicker} min={addDays(todayStr(), 1)} onChange={(e) => e.target.value && onPick(e.target.value)}
-        style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} />
-    </label>
+    <>
+      <button type="button" aria-label={label} onClick={() => setOpen(true)}
+        style={{ width: 36, height: 36, border: 0, borderRadius: "50%", background: "var(--paper)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+        <Icon name="cal" size={16} width={1.6} />
+      </button>
+      {open && <CalendarSheet title="Move to" min={addDays(todayStr(), 1)} onPick={(d) => { setOpen(false); onPick(d); }} onClose={() => setOpen(false)} />}
+    </>
   );
 }
 
 // A task that keeps getting pushed back
 function Shifter({ item, onClose, onMove, onDrop, onKeep, keepLabel }) {
+  const [picking, setPicking] = useState(false);
   const times = (item.moved_count || 0) + (onKeep ? 0 : 1);
   return (
     <div className="scrim center" onClick={(e) => { e.stopPropagation(); onClose(); }}>
@@ -252,10 +256,8 @@ function Shifter({ item, onClose, onMove, onDrop, onKeep, keepLabel }) {
         <span style={{ fontSize: 21, fontWeight: 500, letterSpacing: "-0.02em", lineHeight: 1.2 }}>“{item.title}” keeps getting pushed back.</span>
         <span style={{ fontSize: 14, color: "var(--soft)", marginBottom: 6 }}>It might be too big, or not that important. What would help?</span>
         <a className="btn" href={`#/task/${item.id}`}>Break it into smaller steps</a>
-        <label className="btn white" style={{ position: "relative", cursor: "pointer" }}>
-          Pick a date and stick to it
-          <input type="date" onClick={openPicker} min={addDays(todayStr(), 1)} onChange={(e) => e.target.value && onMove(e.target.value)} style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} />
-        </label>
+        <button className="btn white" onClick={() => setPicking(true)}>Pick a date and stick to it</button>
+        {picking && <CalendarSheet title="Do it on" min={addDays(todayStr(), 1)} onPick={(d) => { setPicking(false); onMove(d); }} onClose={() => setPicking(false)} />}
         <button className="btn white" onClick={onDrop}>Drop it</button>
         {onKeep
           ? <button className="btn quiet" onClick={onKeep}>{keepLabel}</button>

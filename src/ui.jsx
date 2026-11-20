@@ -97,7 +97,3 @@ export const countSubtasks = (db, item) => {
   return { total: kids.length, done: kids.filter((k) => k.done).length };
 };
 
-// Opens the browser's calendar for a date field (desktop browsers otherwise only open it from the small icon)
-export function openPicker(e) {
-  try { e.currentTarget.showPicker(); } catch { /* older browsers: the field still takes focus */ }
-}

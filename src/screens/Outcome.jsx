@@ -1,4 +1,4 @@
-import { openPicker } from "../ui.jsx";
+import { CalendarSheet } from "../Calendar.jsx";
 import { useState } from "react";
 import { childrenOf, dateRange, fmtMins, niceDate, outcomeProgress, remainingMins } from "../lib/logic.js";
 import { Back, Dot, Icon, Tick } from "../ui.jsx";
@@ -20,12 +20,15 @@ function AreaPill({ db, value, onChange }) {
 export { AreaPill };
 
 function DuePill({ value, onChange }) {
+  const [open, setOpen] = useState(false);
   return (
-    <label className="pillbtn" style={{ marginLeft: "auto" }}>
-      <Icon name="cal" size={15} width={1.6} /><span className="val">{value ? `Due ${niceDate(value)}` : "Set due date"}</span>
-      <input type="date" onClick={openPicker} value={value || ""} onChange={(e) => onChange(e.target.value || null)} aria-label="Due date"
-        style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} />
-    </label>
+    <>
+      <button type="button" className="pillbtn" style={{ marginLeft: "auto" }} onClick={() => setOpen(true)}>
+        <Icon name="cal" size={15} width={1.6} /><span className="val">{value ? `Due ${niceDate(value)}` : "Set due date"}</span>
+      </button>
+      {open && <CalendarSheet title="Outcome due date" value={value} onPick={(d) => { onChange(d); setOpen(false); }}
+        onClear={() => { onChange(null); setOpen(false); }} onClose={() => setOpen(false)} />}
+    </>
   );
 }
 

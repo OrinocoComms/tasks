@@ -1,4 +1,4 @@
-import { openPicker } from "../ui.jsx";
+import { CalendarSheet } from "../Calendar.jsx";
 import { useState } from "react";
 import { DAYS, ORDS, addDays, childrenOf, dateRange, fmtMins, nextOccurrence, ordinal, remainingMins, repeatLabel, todayStr } from "../lib/logic.js";
 import { Back, Dot, Icon, Tick } from "../ui.jsx";
@@ -297,6 +297,7 @@ function DateSheet({ item, onSave, onClose }) {
   const [range, setRange] = useState(!!(item.start_date && item.due_date && item.start_date !== item.due_date));
   const [start, setStart] = useState(item.start_date || item.due_date || todayStr());
   const [end, setEnd] = useState(item.due_date || "");
+  const [picking, setPicking] = useState(null); // "start" | "end"
   return (
     <div className="scrim" onClick={onClose}>
       <div className="sheet" role="dialog" aria-label="Due date" onClick={(e) => e.stopPropagation()}>
@@ -305,14 +306,18 @@ function DateSheet({ item, onSave, onClose }) {
           <button className={!range ? "on" : ""} onClick={() => setRange(false)}>One day</button>
           <button className={range ? "on" : ""} onClick={() => setRange(true)}>Start → finish</button>
         </div>
-        <label className="small" style={{ display: "flex", flexDirection: "column", gap: 6 }}>{range ? "Start" : "Date"}
-          <input className="input" type="date" onClick={openPicker} value={start} onChange={(e) => setStart(e.target.value)} />
-        </label>
+        <button type="button" className="drow first" style={{ background: "var(--card)", borderRadius: 14, padding: "0 14px" }} onClick={() => setPicking("start")}>
+          <span className="k">{range ? "Start" : "Date"}</span><span className="v num">{start ? dateRange(start) : "Choose"}</span><Icon name="cal" size={17} width={1.6} />
+        </button>
         {range && (
-          <label className="small" style={{ display: "flex", flexDirection: "column", gap: 6 }}>Finish (due)
-            <input className="input" type="date" onClick={openPicker} value={end} min={start} onChange={(e) => setEnd(e.target.value)} />
-          </label>
+          <button type="button" className="drow first" style={{ background: "var(--card)", borderRadius: 14, padding: "0 14px" }} onClick={() => setPicking("end")}>
+            <span className="k">Finish (due)</span><span className="v num">{end ? dateRange(end) : "Choose"}</span><Icon name="cal" size={17} width={1.6} />
+          </button>
         )}
+        {picking && <CalendarSheet title={picking === "start" ? (range ? "Start date" : "Date") : "Finish date"}
+          value={picking === "start" ? start : end} min={picking === "end" ? start : undefined}
+          onPick={(d) => { if (picking === "start") { setStart(d); if (end && end < d) setEnd(d); } else setEnd(d); setPicking(null); }}
+          onClose={() => setPicking(null)} />}
         <button className="btn" onClick={() => onSave(range ? { start_date: start || null, due_date: end || null } : { start_date: start || null, due_date: null })}>Save</button>
         <button className="btn white" onClick={() => onSave({ start_date: null, due_date: null })}>No date</button>
         <button className="btn quiet" onClick={onClose}>Cancel</button>
@@ -326,6 +331,7 @@ function AddSubtask({ onAdd }) {
   const [mins, setMins] = useState(null);
   const [custom, setCustom] = useState(false);
   const [date, setDate] = useState("");
+  const [cal, setCal] = useState(false);
   const [editing, setEditing] = useState(false);
   if (!editing) return <button className="addrow" onClick={() => setEditing(true)}>+ Add a subtask</button>;
   const reset = () => { setV(""); setMins(null); setCustom(false); setDate(""); };
@@ -352,15 +358,16 @@ function AddSubtask({ onAdd }) {
         </label>
       )}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <label style={{ position: "relative", flex: 1, minHeight: 44, borderRadius: 12, background: "var(--paper)", display: "flex", alignItems: "center", gap: 8, padding: "0 12px", fontSize: 14, color: date ? "var(--ink)" : "var(--muted)", cursor: "pointer" }}>
+        <button type="button" onClick={() => setCal(true)} aria-label="Subtask due date"
+          style={{ flex: 1, minHeight: 44, border: 0, borderRadius: 12, background: "var(--paper)", display: "flex", alignItems: "center", gap: 8, padding: "0 12px", fontSize: 14, color: date ? "var(--ink)" : "var(--muted)", textAlign: "left" }}>
           <Icon name="cal" size={16} width={1.6} />
           {date ? dateRange(date) : "Due date"}
-          <input type="date" onClick={openPicker} value={date} onChange={(e) => setDate(e.target.value)} aria-label="Subtask due date"
-            style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} />
-        </label>
+        </button>
         <button className="chip on" style={{ minHeight: 44, padding: "0 18px" }} disabled={!v.trim()}>Add</button>
       </div>
       <button type="button" className="btn quiet" style={{ minHeight: 36 }} onClick={() => { reset(); setEditing(false); }}>Close</button>
+      {cal && <CalendarSheet title="Subtask due date" value={date} onPick={(d) => { setDate(d); setCal(false); }}
+        onClear={() => { setDate(""); setCal(false); }} onClose={() => setCal(false)} />}
     </form>
   );
 }
