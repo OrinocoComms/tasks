@@ -3,13 +3,12 @@ import { useEffect, useRef, useState } from "react";
 import {
   addDays, doneToday, fmtMins, ordinal, plannedMins, quickWins, todayItems, todayStr, unallocated, dateRange,
 } from "../lib/logic.js";
-import { condense } from "../lib/store.js";
 import { AreaIcon, Icon, ItemRow, Nav } from "../ui.jsx";
 import { useCompleter } from "./common.jsx";
 
 export default function Today({ db, actions }) {
   const [open, setOpen] = useState({ today: true, unallocated: true });
-  const [sheet, setSheet] = useState(null); // add | rebalance | quick | voice
+  const [sheet, setSheet] = useState(null); // add | rebalance | quick
   const { toggle, glow, dialogs } = useCompleter(db, actions);
   const limit = db.settings?.daily_limit_mins || 60;
 
@@ -47,14 +46,13 @@ export default function Today({ db, actions }) {
         </div>
       </div>
 
-      {/* Key + voice, quick win, add */}
+      {/* Key, quick win, add */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "0 20px 12px 22px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "var(--muted)" }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><span className="dot must" style={{ marginTop: 0 }} />Must do today</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><span className="dot" style={{ marginTop: 0 }} />Moveable</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button className="roundbtn" aria-label="Add a task by voice" onClick={() => setSheet("voice")}><Icon name="mic" /></button>
           <button aria-label="Quick win: give me a 5-minute task" onClick={() => setSheet("quick")}
             style={{ height: 48, border: 0, borderRadius: 999, background: "var(--card)", padding: "0 14px 0 12px", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 600 }}>
             <Icon name="bolt" size={18} />5 min
@@ -96,7 +94,6 @@ export default function Today({ db, actions }) {
       {sheet === "add" && <AddChooser onClose={() => setSheet(null)} />}
       {sheet === "rebalance" && <Rebalance db={db} actions={actions} limit={limit} onClose={() => setSheet(null)} />}
       {sheet === "quick" && <QuickWin db={db} onClose={() => setSheet(null)} />}
-      {sheet === "voice" && <Voice actions={actions} onClose={() => setSheet(null)} />}
       {dialogs}
     </div>
   );
@@ -258,76 +255,3 @@ function QuickWin({ db, onClose }) {
   );
 }
 
-// ---------- Voice ----------
-function Voice({ actions, onClose }) {
-  const Rec = typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
-  const [stage, setStage] = useState(Rec ? "listening" : "type"); // listening | type | thinking | heard
-  const [text, setText] = useState("");
-  const [title, setTitle] = useState("");
-  const recRef = useRef(null);
-
-  useEffect(() => {
-    if (!Rec) return;
-    const rec = new Rec();
-    rec.lang = "en-GB";
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.onresult = (e) => setText(Array.from(e.results).map((r) => r[0].transcript).join(" "));
-    rec.onerror = () => setStage((s) => (s === "listening" ? "type" : s));
-    try { rec.start(); } catch { setStage("type"); }
-    recRef.current = rec;
-    return () => { try { rec.stop(); } catch { /* ignore */ } };
-  }, []);
-
-  const finish = async () => {
-    try { recRef.current?.stop(); } catch { /* ignore */ }
-    if (!text.trim()) return setStage("type");
-    setStage("thinking");
-    setTitle(await condense(text.trim()));
-    setStage("heard");
-  };
-  const add = () => { actions.addItem({ title: title.trim() || text.trim().slice(0, 60), description: text.trim(), from_voice: true }); onClose(); };
-
-  return (
-    <div className="scrim" onClick={onClose}>
-      <div className="sheet" role="dialog" aria-label="Add a task by voice" onClick={(e) => e.stopPropagation()}>
-        {stage === "listening" && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, padding: "18px 0 8px" }}>
-            <div style={{ position: "relative", width: 96, height: 96 }}>
-              <span style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "var(--salmon)", animation: "listen 1.4s ease-out infinite" }} />
-              <span style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "var(--ink)", display: "grid", placeItems: "center" }}><Icon name="mic" size={34} color="#f2efea" /></span>
-            </div>
-            <span style={{ fontSize: 17, fontWeight: 500 }}>Listening…</span>
-            <span className="small" style={{ fontSize: 14, textAlign: "center", minHeight: 40 }}>{text}</span>
-            <button className="btn" style={{ width: "auto", padding: "0 28px" }} onClick={finish}>Done</button>
-            <button className="btn quiet" style={{ width: "auto" }} onClick={() => { try { recRef.current?.stop(); } catch { /* ignore */ } setStage("type"); }}>Type instead</button>
-          </div>
-        )}
-        {stage === "type" && (
-          <>
-            <span className="kicker">Say or type it</span>
-            <textarea className="input" rows={4} autoFocus value={text} onChange={(e) => setText(e.target.value)}
-              placeholder="Use your keyboard's microphone (Google voice typing, Wispr Flow…) or just type" />
-            <button className="btn" onClick={finish}>Make it a task</button>
-          </>
-        )}
-        {stage === "thinking" && <div className="empty" style={{ textAlign: "center" }}>Shortening…</div>}
-        {stage === "heard" && (
-          <>
-            <span className="kicker">New task</span>
-            <div className="panel" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 10 }}>
-              <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} aria-label="Task title"
-                style={{ padding: 0, fontSize: 24, fontWeight: 500, letterSpacing: "-0.02em" }} />
-              <span className="small" style={{ lineHeight: 1.45 }}>“{text}”</span>
-              <span className="small" style={{ fontSize: 12 }}>Your full words are kept in the description.</span>
-            </div>
-            <button className="btn" onClick={add}>Add to Unallocated</button>
-          </>
-        )}
-        <button className="btn quiet" onClick={onClose}>Discard</button>
-      </div>
-    </div>
-  );
-}
-
-export { AreaIcon };

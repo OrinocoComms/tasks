@@ -50,13 +50,14 @@ export default function Task({ db, actions, id, query }) {
   const newOutcome = () => {
     const area = item.area_id ? `&area=${item.area_id}` : "";
     if (!isNew) return go(`/outcome/new?task=${item.id}${area}`);
-    if (draft.title.trim()) { const row = actions.addItem({ ...draft, title: draft.title.trim() }); return go(`/outcome/new?task=${row.id}${area}`); }
+    if (draft.title.trim()) { const row = actions.addItem({ ...draft, title: draft.title.trim() }); actions.tidyTitle(row); return go(`/outcome/new?task=${row.id}${area}`); }
     go(`/outcome/new?then=task${area}`);
   };
 
   const save = () => {
     if (!draft.title.trim()) return;
     const row = actions.addItem({ ...draft, title: draft.title.trim() });
+    actions.tidyTitle(row);
     go(`/task/${row.id}`);
   };
 
@@ -201,7 +202,7 @@ export default function Task({ db, actions, id, query }) {
                   )}
                 </div>
               ))}
-              {!reorder && <AddSubtask onAdd={(f) => actions.addItem({ ...f, parent_id: item.id, area_id: item.area_id, priority: "could", position: kids.length ? Math.max(...kids.map((k) => k.position || 0)) + 1 : 0 })} />}
+              {!reorder && <AddSubtask onAdd={(f) => actions.tidyTitle(actions.addItem({ ...f, parent_id: item.id, area_id: item.area_id, priority: "could", position: kids.length ? Math.max(...kids.map((k) => k.position || 0)) + 1 : 0 }))} />}
             </div>
           </section>
         )}

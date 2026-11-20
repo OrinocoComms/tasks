@@ -232,6 +232,16 @@ export function useStore(user) {
         if (o?.achieved_at) actions.updateOutcome(o.id, { achieved_at: null });
       }
     },
+    // Long titles (often dictated) get shortened to 5 words; the full text goes in the description
+    tidyTitle: async (row) => {
+      const text = row.title.trim();
+      if (text.split(/\s+/).length <= 5) return;
+      const short = await condense(text);
+      if (!short || short === text) return;
+      const cur = dbRef.current.items.find((i) => i.id === row.id);
+      if (!cur || cur.title !== row.title) return; // edited in the meantime
+      actions.updateItem(row.id, { title: short, description: cur.description ? `${text}\n\n${cur.description}` : text });
+    },
     moveItem: (item, date) => {
       const changes = { start_date: date, moved_count: (item.moved_count || 0) + 1 };
       if (item.due_date && item.due_date < date) changes.due_date = date;
