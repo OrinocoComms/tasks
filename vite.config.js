@@ -8,8 +8,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Little steps',
-        short_name: 'Steps',
+        name: "Don't Say Tomorrow",
+        short_name: "Don't Say Tomorrow",
         description: 'One small step a day',
         theme_color: '#2e6a4f',
         background_color: '#f6f4ef',
