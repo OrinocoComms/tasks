@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       manifest: {
         name: "Don't Say Tomorrow",
-        short_name: "Don't Say Tomorrow",
-        description: 'One small step a day',
+        short_name: 'DST',
+        description: 'Do it today',
         theme_color: '#2e6a4f',
         background_color: '#f6f4ef',
         display: 'standalone',
