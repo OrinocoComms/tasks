@@ -5,7 +5,7 @@ The app uses the `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` settings that 
 
 ## 1. Create the tables
 Supabase → **SQL Editor** → **New query** → paste all of `supabase/01-schema.sql` → **Run**.
-Nothing existing is deleted.
+Nothing existing is deleted. (Already ran it before the weekly review was added? Run `supabase/03-weekly-review.sql` too.)
 
 ## 2. Add the voice helper (shortens what you say to a 5-word title)
 1. Supabase → **Edge Functions** → **Deploy a new function** → **Via editor**.

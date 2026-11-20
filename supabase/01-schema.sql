@@ -59,6 +59,9 @@ create table if not exists public.settings (
   user_id uuid primary key default auth.uid() references auth.users on delete cascade,
   daily_limit_mins int not null default 60
 );
+-- Weekly review: which day (0 = Sunday) and when it was last done
+alter table public.settings add column if not exists review_day int not null default 0;
+alter table public.settings add column if not exists last_review date;
 
 create index if not exists items_user_idx on public.items (user_id, done);
 create index if not exists items_parent_idx on public.items (parent_id);

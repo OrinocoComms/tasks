@@ -5,7 +5,7 @@ import { DEFAULT_AREAS, addDays, nextOccurrence, todayStr, toDateStr } from "./l
 // Demo mode: no Supabase configured, or ?demo in the address. Data stays in this browser.
 export const isDemo = !supabase || new URLSearchParams(location.search).has("demo");
 
-const LS = "focus-demo-v2";
+const LS = "focus-demo-v3";
 const uid = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
 
@@ -65,7 +65,14 @@ function demoSeed() {
   item({ title: "Return the library books" });
   item({ title: "Sort the summer photos", from_voice: true });
 
-  return { areas, outcomes, items, sessions: [], settings: { daily_limit_mins: 60 } };
+  // Timer history for the review (guessed vs actual)
+  const byTitle = (t) => items.find((i) => i.title === t).id;
+  const sessions = [
+    ["Test the existing smoke alarms", 14, 3], ["Research smoke alarms", 35, 1],
+    ["Take old paint tins to the tip", 50, 6], ["Put up shelving brackets", 70, 4],
+  ].map(([title, mins, daysAgo]) => ({ id: uid(), item_id: byTitle(title), seconds: mins * 60, finished_at: ago(daysAgo) }));
+
+  return { areas, outcomes, items, sessions, settings: { daily_limit_mins: 60, review_day: new Date().getDay(), last_review: null } };
 }
 function parseDateDay(s) { const [y, m, dd] = s.split("-").map(Number); return new Date(y, m - 1, dd).getDay(); }
 
@@ -78,15 +85,17 @@ function demoLoad() {
 export function resetDemo() { localStorage.removeItem(LS); location.reload(); }
 
 async function fetchAll() {
-  const [a, o, i, s] = await Promise.all([
+  const since = new Date(Date.now() - 35 * 86400000).toISOString();
+  const [a, o, i, s, ts] = await Promise.all([
     supabase.from("areas").select("*").order("position"),
     supabase.from("outcomes").select("*").order("created_at"),
     supabase.from("items").select("*").order("position"),
     supabase.from("settings").select("*").maybeSingle(),
+    supabase.from("timer_sessions").select("*").gte("finished_at", since),
   ]);
-  const err = a.error || o.error || i.error || s.error;
+  const err = a.error || o.error || i.error || s.error || ts.error;
   if (err) throw err;
-  return { areas: a.data, outcomes: o.data, items: i.data, sessions: [], settings: s.data || { daily_limit_mins: 60 } };
+  return { areas: a.data, outcomes: o.data, items: i.data, sessions: ts.data, settings: s.data || { daily_limit_mins: 60, review_day: 0, last_review: null } };
 }
 
 export function useStore(user) {
@@ -231,11 +240,15 @@ export function useStore(user) {
 
     saveSession: (itemId, seconds) => {
       const row = { id: uid(), item_id: itemId, seconds, finished_at: now() };
+      setDb((d) => ({ ...d, sessions: [...(d.sessions || []), row] }));
       remote(supabase?.from("timer_sessions").insert(row));
     },
-    setLimit: (mins) => {
-      setDb((d) => ({ ...d, settings: { ...d.settings, daily_limit_mins: mins } }));
-      remote(supabase?.from("settings").upsert({ daily_limit_mins: mins }));
+    setLimit: (mins) => actions.setSettings({ daily_limit_mins: mins }),
+    setSettings: (changes) => {
+      const next = { ...dbRef.current.settings, ...changes };
+      setDb((d) => ({ ...d, settings: next }));
+      const { user_id, ...row } = next;
+      remote(supabase?.from("settings").upsert(row));
     },
   };
 

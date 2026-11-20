@@ -9,7 +9,9 @@ import Area from "./screens/Area.jsx";
 import Outcome from "./screens/Outcome.jsx";
 import Task from "./screens/Task.jsx";
 import Timer from "./screens/Timer.jsx";
-import More from "./screens/More.jsx";
+import Review from "./screens/Review.jsx";
+import { reviewDue } from "./lib/logic.js";
+import { navState } from "./ui.jsx";
 
 // Tiny hash router: #/task/abc?outcome=xyz
 function useRoute() {
@@ -46,6 +48,7 @@ function Home({ user }) {
   const route = useRoute();
   if (!db) return <div className="empty">{error ? `Couldn't load: ${error}` : "Loading…"}</div>;
 
+  navState.reviewDue = reviewDue(db.settings);
   const [a, b] = route.parts;
   const props = { db, actions, query: route.query };
   let screen;
@@ -55,7 +58,7 @@ function Home({ user }) {
   else if (a === "outcome") screen = <Outcome key={b} {...props} id={b} />;
   else if (a === "task") screen = <Task key={b + JSON.stringify(route.query)} {...props} id={b} />;
   else if (a === "timer") screen = <Timer key={b} {...props} id={b} />;
-  else if (a === "more") screen = <More {...props} />;
+  else if (a === "review" || a === "more") screen = <Review key={route.query.step || "home"} {...props} />;
   else screen = <Today {...props} />;
 
   return (

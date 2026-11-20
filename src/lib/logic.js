@@ -159,3 +159,47 @@ export const DEFAULT_AREAS = [
   ["House", "house"], ["Health", "health"], ["Kids", "kids"], ["Garden", "garden"],
   ["Finances", "finances"], ["Leisure", "leisure"], ["General", "general"], ["Car", "car"],
 ];
+
+// ---------- Weekly review ----------
+const dayOf = (s) => parseDate(s).getDay();
+// The most recent review day, on or before today
+export function lastReviewDay(reviewDay) {
+  const t = todayStr();
+  return addDays(t, -((dayOf(t) - reviewDay + 7) % 7));
+}
+export function reviewDue(settings) {
+  const day = settings?.review_day ?? 0;
+  const last = settings?.last_review;
+  if (!last) return dayOf(todayStr()) === day;
+  return last < lastReviewDay(day);
+}
+export function nextMonday() {
+  const t = todayStr();
+  return addDays(t, ((8 - dayOf(t)) % 7) || 7);
+}
+// What happened in the last 7 days
+export function weekSummary(db) {
+  const from = addDays(todayStr(), -6);
+  const inWeek = (ts) => ts && toDateStr(ts) >= from;
+  const done = db.items.filter((i) => i.done && inWeek(i.done_at)).sort((a, b) => b.done_at.localeCompare(a.done_at));
+  const achieved = db.outcomes.filter((o) => inWeek(o.achieved_at));
+  const sessions = (db.sessions || []).filter((s) => inWeek(s.finished_at));
+  const timedMins = Math.round(sessions.reduce((n, s) => n + s.seconds, 0) / 60);
+  // Guessed vs actual, per task (only tasks that had a guess)
+  const byItem = {};
+  for (const s of sessions) byItem[s.item_id] = (byItem[s.item_id] || 0) + s.seconds;
+  const timed = Object.entries(byItem).map(([id, secs]) => {
+    const item = db.items.find((i) => i.id === id);
+    return item && item.est_mins ? { item, est: item.est_mins, actual: Math.max(1, Math.round(secs / 60)) } : null;
+  }).filter(Boolean);
+  return { done, achieved, timedMins, timed };
+}
+export function notDone(items) {
+  const t = todayStr();
+  return items.filter((i) => !i.done && doDate(i) && doDate(i) <= t)
+    .sort((a, b) => (b.moved_count || 0) - (a.moved_count || 0) || doDate(a).localeCompare(doDate(b)));
+}
+export function plannedOn(items, date) {
+  return items.filter((i) => !i.done && doDate(i) === date)
+    .sort((a, b) => (a.priority === "must" ? 0 : 1) - (b.priority === "must" ? 0 : 1));
+}

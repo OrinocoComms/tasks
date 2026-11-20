@@ -8,6 +8,7 @@ export function Icon({ name, size = 20, width = 1.8, color }) {
   const p = { width: size, height: size, viewBox: "0 0 24 24", ...S, strokeWidth: width, style: color ? { color } : undefined, "aria-hidden": true };
   switch (name) {
     case "back": return <svg {...p}><path d="M15 5l-7 7 7 7" /></svg>;
+    case "gear": return <svg {...p}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z" /></svg>;
     case "plus": return <svg {...p}><path d="M12 5v14M5 12h14" /></svg>;
     case "chev": return <svg {...p}><path d="M6 9l6 6 6-6" /></svg>;
     case "right": return <svg {...p}><path d="M9 6l6 6-6 6" /></svg>;
@@ -78,12 +79,17 @@ export function useGlow() {
   return [glow, fire];
 }
 
+// Set by App each render: whether the weekly review is due (shows a dot on the tab)
+export const navState = { reviewDue: false };
 export function Nav({ tab }) {
   return (
     <nav className="nav" aria-label="Main">
       <a href="#/" className={tab === "today" ? "on" : ""} aria-current={tab === "today" ? "page" : undefined}>Today</a>
       <a href="#/areas" className={`wide ${tab === "areas" ? "on" : ""}`} aria-current={tab === "areas" ? "page" : undefined}>Areas of focus</a>
-      <a href="#/more" className={tab === "more" ? "on" : ""} aria-current={tab === "more" ? "page" : undefined}>TBC</a>
+      <a href="#/review" className={tab === "review" ? "on" : ""} aria-current={tab === "review" ? "page" : undefined}
+        aria-label={navState.reviewDue ? "Review (due)" : undefined} style={{ position: "relative" }}>
+        Review{navState.reviewDue && <span aria-hidden="true" style={{ position: "absolute", top: 8, right: 12, width: 8, height: 8, borderRadius: "50%", background: "var(--salmon)" }} />}
+      </a>
     </nav>
   );
 }
