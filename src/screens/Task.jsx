@@ -22,6 +22,7 @@ export default function Task({ db, actions, id, query }) {
   const [dateOpen, setDateOpen] = useState(false);
   const [descOpen, setDescOpen] = useState(!!existing?.description);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [reorder, setReorder] = useState(false);
   const { toggle, glow, dialogs } = useCompleter(db, actions);
 
   if (!isNew && !existing) return <div className="page"><div className="topbar"><Back href="#/" /></div><div className="empty">Task not found.</div></div>;
@@ -35,6 +36,14 @@ export default function Task({ db, actions, id, query }) {
   const subMins = kids.reduce((n, k) => n + remainingMins(db.items, k), 0);
   const repeats = item.repeat && item.repeat.freq && item.repeat.freq !== "never";
   const showRepeat = repeats || repeatOpen;
+
+  // Subtasks are done in list order; renumber them all when one moves
+  const moveKid = (idx, dir) => {
+    const order = [...kids];
+    const [k] = order.splice(idx, 1);
+    order.splice(idx + dir, 0, k);
+    order.forEach((x, i) => { if (x.position !== i) actions.updateItem(x.id, { position: i }); });
+  };
 
   const save = () => {
     if (!draft.title.trim()) return;
@@ -153,11 +162,12 @@ export default function Task({ db, actions, id, query }) {
           <section className="panel">
             <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px 10px" }}>
               <span className="h2" style={{ flex: 1, fontSize: 19 }}>Subtasks</span>
-              {kids.length > 0 && <span className="small num">{kids.length - openKids.length} of {kids.length} done</span>}
+              {kids.length > 0 && !reorder && <span className="small num">{kids.length - openKids.length} of {kids.length} done</span>}
+              {kids.length > 1 && <button className={`chip ${reorder ? "on" : ""}`} aria-pressed={reorder} onClick={() => setReorder(!reorder)}>{reorder ? "Done" : "Reorder"}</button>}
             </div>
             <div style={{ padding: "0 4px" }}>
-              {kids.map((k) => (
-                <div key={k.id} className={`row ${k.done ? "done" : ""} ${glow === k.id ? "glow" : ""}`} style={{ alignItems: "flex-start", paddingRight: 0 }}>
+              {kids.map((k, idx) => (
+                <div key={k.id} className={`row ${k.done ? "done" : ""} ${glow === k.id ? "glow" : ""}`} style={{ alignItems: reorder ? "center" : "flex-start", paddingRight: 0 }}>
                   <Tick item={k} onClick={() => toggle(k)} />
                   <a className="rowbody" href={`#/task/${k.id}`} style={{ paddingTop: 10 }}>
                     <span className="rowtitle"><span className="t" style={{ fontSize: 15 }}>{k.title}</span><Dot item={k} small /></span>
@@ -166,14 +176,20 @@ export default function Task({ db, actions, id, query }) {
                       {k.est_mins ? <span className="right">{fmtMins(k.est_mins)}</span> : null}
                     </span>
                   </a>
-                  {!k.done && (
+                  {reorder && (
+                    <span style={{ display: "flex", flexShrink: 0 }}>
+                      <button className="iconbtn" aria-label={`Move "${k.title}" up`} disabled={idx === 0} style={{ opacity: idx === 0 ? 0.25 : 1, transform: "rotate(180deg)" }} onClick={() => moveKid(idx, -1)}><Icon name="chev" size={18} /></button>
+                      <button className="iconbtn" aria-label={`Move "${k.title}" down`} disabled={idx === kids.length - 1} style={{ opacity: idx === kids.length - 1 ? 0.25 : 1 }} onClick={() => moveKid(idx, 1)}><Icon name="chev" size={18} /></button>
+                    </span>
+                  )}
+                  {!k.done && !reorder && (
                     <a href={`#/timer/${k.id}`} aria-label={`Start "${k.title}"`} style={{ width: 44, height: 48, flexShrink: 0, display: "grid", placeItems: "center" }}>
                       <span style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--paper)", display: "grid", placeItems: "center" }}><Icon name="play" size={12} /></span>
                     </a>
                   )}
                 </div>
               ))}
-              <AddSubtask onAdd={(title) => actions.addItem({ title, parent_id: item.id, area_id: item.area_id, priority: "could" })} />
+              {!reorder && <AddSubtask onAdd={(f) => actions.addItem({ ...f, parent_id: item.id, area_id: item.area_id, priority: "could", position: kids.length ? Math.max(...kids.map((k) => k.position || 0)) + 1 : 0 })} />}
             </div>
           </section>
         )}
@@ -306,13 +322,44 @@ function DateSheet({ item, onSave, onClose }) {
 
 function AddSubtask({ onAdd }) {
   const [v, setV] = useState("");
+  const [mins, setMins] = useState(null);
+  const [custom, setCustom] = useState(false);
+  const [date, setDate] = useState("");
   const [editing, setEditing] = useState(false);
   if (!editing) return <button className="addrow" onClick={() => setEditing(true)}>+ Add a subtask</button>;
+  const reset = () => { setV(""); setMins(null); setCustom(false); setDate(""); };
+  const submit = (e) => {
+    e.preventDefault();
+    if (!v.trim()) return;
+    onAdd({ title: v.trim(), est_mins: mins ? Number(mins) : null, start_date: date || null });
+    reset();
+  };
   return (
-    <form onSubmit={(e) => { e.preventDefault(); if (v.trim()) onAdd(v.trim()); setV(""); }} style={{ borderTop: "1px solid var(--line)", padding: "6px 10px", display: "flex", gap: 8 }}>
-      <input className="input" autoFocus value={v} onChange={(e) => setV(e.target.value)} placeholder="Subtask" style={{ background: "var(--paper)" }}
-        onBlur={() => { if (!v.trim()) setEditing(false); }} />
-      <button className="chip on" style={{ minHeight: 44 }}>Add</button>
+    <form onSubmit={submit} style={{ borderTop: "1px solid var(--line)", padding: "10px 10px 12px", display: "flex", flexDirection: "column", gap: 10 }}>
+      <input className="input" autoFocus value={v} onChange={(e) => setV(e.target.value)} placeholder="Subtask" style={{ background: "var(--paper)" }} />
+      <div role="group" aria-label="Subtask time" style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {PRESETS.map((m) => (
+          <button type="button" key={m} className={`chip ${!custom && mins === m ? "on" : ""}`} aria-pressed={!custom && mins === m}
+            onClick={() => { setCustom(false); setMins(mins === m ? null : m); }}>{m} min</button>
+        ))}
+        <button type="button" className={`chip ${custom ? "on" : "outline"}`} aria-pressed={custom} onClick={() => { setCustom(true); setMins(45); }}>Custom…</button>
+      </div>
+      {custom && (
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "var(--soft)" }}>
+          <input className="input mins" type="number" min="1" value={mins || ""} onChange={(e) => setMins(e.target.value)} aria-label="Custom subtask time in minutes" />
+          minutes
+        </label>
+      )}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <label style={{ position: "relative", flex: 1, minHeight: 44, borderRadius: 12, background: "var(--paper)", display: "flex", alignItems: "center", gap: 8, padding: "0 12px", fontSize: 14, color: date ? "var(--ink)" : "var(--muted)", cursor: "pointer" }}>
+          <Icon name="cal" size={16} width={1.6} />
+          {date ? dateRange(date) : "Due date (optional)"}
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Subtask due date"
+            style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} />
+        </label>
+        <button className="chip on" style={{ minHeight: 44, padding: "0 18px" }} disabled={!v.trim()}>Add</button>
+      </div>
+      <button type="button" className="btn quiet" style={{ minHeight: 36 }} onClick={() => { reset(); setEditing(false); }}>Close</button>
     </form>
   );
 }
