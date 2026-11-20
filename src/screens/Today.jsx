@@ -51,8 +51,8 @@ export default function Today({ db, actions }) {
       {/* Key + voice, quick win, add */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "0 20px 12px 22px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "var(--muted)" }}>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><span className="dot must" style={{ marginTop: 0 }} />Must do</span>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><span className="dot" style={{ marginTop: 0 }} />Could do</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><span className="dot must" style={{ marginTop: 0 }} />Must do today</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><span className="dot" style={{ marginTop: 0 }} />Moveable</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button className="roundbtn" aria-label="Add a task by voice" onClick={() => setSheet("voice")}><Icon name="mic" /></button>
@@ -185,7 +185,7 @@ function Rebalance({ db, actions, limit, onClose }) {
               <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
                 <span style={{ fontSize: 15, lineHeight: 1.3 }}>{item.title}</span>
                 <span className="num" style={{ fontSize: 12, color: (item.moved_count || 0) >= 2 ? "var(--must)" : "var(--muted)" }}>
-                  {fmtMins(item.est_mins || 0)}{item.priority === "must" ? " · Must do" : ""}{item.moved_count ? ` · moved ${item.moved_count}× already` : ""}
+                  {fmtMins(item.est_mins || 0)}{item.priority === "must" ? " · Must do today" : ""}{item.moved_count ? ` · moved ${item.moved_count}× already` : ""}
                 </span>
               </div>
               <button className="chip" onClick={() => tryMove(item, tomorrow)}>Tomorrow</button>

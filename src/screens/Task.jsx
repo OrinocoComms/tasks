@@ -88,10 +88,10 @@ export default function Task({ db, actions, id, query }) {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
             <div className="seg" role="group" aria-label="Priority">
               <button className={item.priority === "must" ? "on" : ""} aria-pressed={item.priority === "must"} onClick={() => set({ priority: "must" })}>
-                <span className="dot must" style={{ marginTop: 0, width: 9, height: 9 }} />Must do
+                <span className="dot must" style={{ marginTop: 0, width: 9, height: 9 }} />Must do today
               </button>
               <button className={item.priority === "could" ? "on" : ""} aria-pressed={item.priority === "could"} onClick={() => set({ priority: "could" })}>
-                <span className="dot" style={{ marginTop: 0, width: 9, height: 9 }} />Could do
+                <span className="dot" style={{ marginTop: 0, width: 9, height: 9 }} />Moveable
               </button>
             </div>
             <button aria-label={repeats ? "Repeat settings" : "Make this task repeat"} aria-pressed={!!repeats}

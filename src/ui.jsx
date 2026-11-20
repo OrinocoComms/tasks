@@ -49,7 +49,7 @@ export function Tick({ item, onClick, small }) {
 
 export function Dot({ item, small }) {
   if (item.done) return null;
-  return <span role="img" aria-label={item.priority === "must" ? "Must do" : "Could do"} className={`dot ${item.priority === "must" ? "must" : ""} ${small ? "sm" : ""}`} />;
+  return <span role="img" aria-label={item.priority === "must" ? "Must do today" : "Moveable"} className={`dot ${item.priority === "must" ? "must" : ""} ${small ? "sm" : ""}`} />;
 }
 
 // A task row: tick, title + priority dot, then a meta line. Tapping the text opens it.
