@@ -1,7 +1,7 @@
 import { DatePopup } from "../Calendar.jsx";
 import { useEffect, useRef, useState } from "react";
 import {
-  addDays, doneToday, fmtMins, plannedMins, quickWins, todayItems, todayStr, unallocated, dateRange,
+  addDays, doneToday, fmtMins, ordinal, plannedMins, quickWins, todayItems, todayStr, unallocated, dateRange,
 } from "../lib/logic.js";
 import { condense } from "../lib/store.js";
 import { AreaIcon, Icon, ItemRow, Nav } from "../ui.jsx";
@@ -10,8 +10,6 @@ import { useCompleter } from "./common.jsx";
 export default function Today({ db, actions }) {
   const [open, setOpen] = useState({ today: true, unallocated: true });
   const [sheet, setSheet] = useState(null); // add | rebalance | quick | voice
-  const [dismissed, setDismissed] = useState([]);
-  const [shifter, setShifter] = useState(null);
   const { toggle, glow, dialogs } = useCompleter(db, actions);
   const limit = db.settings?.daily_limit_mins || 60;
 
@@ -35,8 +33,6 @@ export default function Today({ db, actions }) {
       </>
     );
   };
-  // Tasks on today's list that have already been put off twice
-  const shifters = live.filter((i) => (i.moved_count || 0) >= 2 && !dismissed.includes(i.id));
 
   return (
     <div className="page">
@@ -77,16 +73,6 @@ export default function Today({ db, actions }) {
           </div>
         )}
 
-        {shifters.map((item) => (
-          <div key={item.id} className="alert" role="alert">
-            <span className="ic"><Icon name="warn" size={20} width={2} color="#fff" /></span>
-            <span style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
-              <span style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.25 }}>{item.title}</span>
-              <span style={{ fontSize: 13, opacity: 0.85 }}>Moved {item.moved_count} times already</span>
-            </span>
-            <button onClick={() => setShifter(item)}>Sort it</button>
-          </div>
-        ))}
 
         <Section title="Today" open={open.today} onToggle={() => setOpen({ ...open, today: !open.today })}
           summary={`${finished.length} of ${list.length} done`}>
@@ -112,11 +98,6 @@ export default function Today({ db, actions }) {
       {sheet === "rebalance" && <Rebalance db={db} actions={actions} limit={limit} onClose={() => setSheet(null)} />}
       {sheet === "quick" && <QuickWin db={db} onClose={() => setSheet(null)} />}
       {sheet === "voice" && <Voice actions={actions} onClose={() => setSheet(null)} />}
-      {shifter && <Shifter item={shifter} keepLabel="Keep it on today"
-        onClose={() => setShifter(null)}
-        onKeep={() => { setDismissed([...dismissed, shifter.id]); setShifter(null); }}
-        onMove={(d) => { if (d) actions.moveItem(shifter, d); setShifter(null); }}
-        onDrop={() => { actions.deleteItem(shifter.id); setShifter(null); }} />}
       {dialogs}
     </div>
   );
@@ -246,22 +227,20 @@ function DateButton({ label, onPick }) {
 }
 
 // A task that keeps getting pushed back
-function Shifter({ item, onClose, onMove, onDrop, onKeep, keepLabel }) {
+function Shifter({ item, onClose, onMove, onDrop }) {
   const [picking, setPicking] = useState(false);
-  const times = (item.moved_count || 0) + (onKeep ? 0 : 1);
+  const times = (item.moved_count || 0) + 1;
   return (
     <div className="scrim center" onClick={(e) => { e.stopPropagation(); onClose(); }}>
-      <div className="dialog" role="alertdialog" aria-label={`Task moved ${times} times`} onClick={(e) => e.stopPropagation()}>
-        <span style={{ alignSelf: "flex-start", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--must)", background: "var(--rust-soft)", borderRadius: 999, padding: "4px 10px" }}>Moved {times} times</span>
+      <div className="dialog" role="alertdialog" aria-label={`Moving this for the ${ordinal(times)} time`} onClick={(e) => e.stopPropagation()}>
+        <span style={{ alignSelf: "flex-start", fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--must)", background: "var(--rust-soft)", borderRadius: 999, padding: "4px 10px" }}>{ordinal(times)} move</span>
         <span style={{ fontSize: 21, fontWeight: 500, letterSpacing: "-0.02em", lineHeight: 1.2 }}>“{item.title}” keeps getting pushed back.</span>
         <span style={{ fontSize: 14, color: "var(--soft)", marginBottom: 6 }}>It might be too big, or not that important. What would help?</span>
         <a className="btn" href={`#/task/${item.id}`}>Break it into smaller steps</a>
         <button className="btn white" onClick={() => setPicking(true)}>Pick a date and stick to it</button>
         {picking && <DatePopup title="Do it on" min={addDays(todayStr(), 1)} onSave={({ start }) => { setPicking(false); onMove(start); }} onClose={() => setPicking(false)} />}
         <button className="btn white" onClick={onDrop}>Drop it</button>
-        {onKeep
-          ? <button className="btn quiet" onClick={onKeep}>{keepLabel}</button>
-          : <button className="btn quiet" onClick={() => onMove()}>Move it anyway</button>}
+        <button className="btn quiet" onClick={() => onMove()}>Move it anyway</button>
       </div>
     </div>
   );
