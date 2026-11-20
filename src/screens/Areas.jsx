@@ -84,8 +84,7 @@ function TileGrid({ areas, onReorder }) {
     const g = gridRef.current;
     const stop = (e) => { if (st.current.active) e.preventDefault(); };
     g.addEventListener("touchmove", stop, { passive: false });
-    document.addEventListener("touchmove", stop, { passive: false });
-    return () => { g.removeEventListener("touchmove", stop); document.removeEventListener("touchmove", stop); };
+    return () => g.removeEventListener("touchmove", stop);
   }, []);
 
   const down = (e, id) => {
@@ -135,15 +134,14 @@ function TileGrid({ areas, onReorder }) {
       {order.filter((id) => byId[id]).map((id) => {
         const a = byId[id], dragging = drag?.id === id;
         return (
-          <div key={id} ref={(el) => { els.current[id] = el; }} className={`tile${dragging ? " lifting" : ""}`}
-            role="link" tabIndex={0} aria-label={a.name} draggable={false}
-            onKeyDown={(e) => { if (e.key === "Enter") location.hash = `#/area/${id}`; }}
+          <a key={id} ref={(el) => { els.current[id] = el; }} className={`tile${dragging ? " lifting" : ""}`} href={`#/area/${id}`}
+            draggable={false}
             style={dragging ? { transform: `translate(${drag.dx}px, ${drag.dy}px) scale(1.06)` } : undefined}
             onPointerDown={(e) => down(e, id)} onPointerMove={move} onPointerUp={up} onPointerCancel={up}
             onContextMenu={(e) => e.preventDefault()}
-            onClick={() => { if (!(st.current.justDragged || st.current.active)) location.hash = `#/area/${id}`; }}>
+            onClick={(e) => { if (st.current.justDragged || st.current.active) e.preventDefault(); }}>
             <AreaIcon icon={a.icon} /><span>{a.name}</span>
-          </div>
+          </a>
         );
       })}
     </div>
