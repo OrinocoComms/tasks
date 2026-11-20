@@ -121,12 +121,8 @@ function AddChooser({ onClose }) {
     <div className="scrim" onClick={onClose}>
       <div className="sheet" role="dialog" aria-label="Add" onClick={(e) => e.stopPropagation()}>
         <span className="kicker">Add</span>
-        <a className="btn white" href="#/task/new" style={{ justifyContent: "flex-start", minHeight: 72, borderRadius: 20, flexDirection: "column", alignItems: "flex-start", gap: 2, padding: "12px 20px" }}>
-          <span style={{ fontSize: 18, fontWeight: 600 }}>Task</span><span className="small">Something to do, on its own or as part of an outcome</span>
-        </a>
-        <a className="btn white" href="#/outcome/new" style={{ justifyContent: "flex-start", minHeight: 72, borderRadius: 20, flexDirection: "column", alignItems: "flex-start", gap: 2, padding: "12px 20px" }}>
-          <span style={{ fontSize: 18, fontWeight: 600 }}>Outcome</span><span className="small">A bigger goal, with tasks under it</span>
-        </a>
+        <a className="btn white" href="#/task/new" style={{ minHeight: 60, fontSize: 18, fontWeight: 600 }}>Task</a>
+        <a className="btn white" href="#/outcome/new" style={{ minHeight: 60, fontSize: 18, fontWeight: 600 }}>Outcome</a>
         <button className="btn quiet" onClick={onClose}>Cancel</button>
       </div>
     </div>
