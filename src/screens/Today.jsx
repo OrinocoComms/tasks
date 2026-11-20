@@ -1,3 +1,4 @@
+import { openPicker } from "../ui.jsx";
 import { useEffect, useRef, useState } from "react";
 import {
   addDays, doneToday, fmtMins, plannedMins, quickWins, todayItems, todayStr, unallocated, dateRange,
@@ -235,7 +236,7 @@ function DateButton({ label, onPick }) {
   return (
     <label aria-label={label} style={{ position: "relative", width: 36, height: 36, borderRadius: "50%", background: "var(--paper)", display: "grid", placeItems: "center", flexShrink: 0, cursor: "pointer" }}>
       <Icon name="cal" size={16} width={1.6} />
-      <input type="date" min={addDays(todayStr(), 1)} onChange={(e) => e.target.value && onPick(e.target.value)}
+      <input type="date" onClick={openPicker} min={addDays(todayStr(), 1)} onChange={(e) => e.target.value && onPick(e.target.value)}
         style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} />
     </label>
   );
@@ -253,7 +254,7 @@ function Shifter({ item, onClose, onMove, onDrop, onKeep, keepLabel }) {
         <a className="btn" href={`#/task/${item.id}`}>Break it into smaller steps</a>
         <label className="btn white" style={{ position: "relative", cursor: "pointer" }}>
           Pick a date and stick to it
-          <input type="date" min={addDays(todayStr(), 1)} onChange={(e) => e.target.value && onMove(e.target.value)} style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} />
+          <input type="date" onClick={openPicker} min={addDays(todayStr(), 1)} onChange={(e) => e.target.value && onMove(e.target.value)} style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} />
         </label>
         <button className="btn white" onClick={onDrop}>Drop it</button>
         {onKeep

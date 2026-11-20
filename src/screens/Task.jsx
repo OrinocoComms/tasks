@@ -1,3 +1,4 @@
+import { openPicker } from "../ui.jsx";
 import { useState } from "react";
 import { DAYS, ORDS, addDays, childrenOf, dateRange, fmtMins, nextOccurrence, ordinal, remainingMins, repeatLabel, todayStr } from "../lib/logic.js";
 import { Back, Dot, Icon, Tick } from "../ui.jsx";
@@ -305,11 +306,11 @@ function DateSheet({ item, onSave, onClose }) {
           <button className={range ? "on" : ""} onClick={() => setRange(true)}>Start → finish</button>
         </div>
         <label className="small" style={{ display: "flex", flexDirection: "column", gap: 6 }}>{range ? "Start" : "Date"}
-          <input className="input" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
+          <input className="input" type="date" onClick={openPicker} value={start} onChange={(e) => setStart(e.target.value)} />
         </label>
         {range && (
           <label className="small" style={{ display: "flex", flexDirection: "column", gap: 6 }}>Finish (due)
-            <input className="input" type="date" value={end} min={start} onChange={(e) => setEnd(e.target.value)} />
+            <input className="input" type="date" onClick={openPicker} value={end} min={start} onChange={(e) => setEnd(e.target.value)} />
           </label>
         )}
         <button className="btn" onClick={() => onSave(range ? { start_date: start || null, due_date: end || null } : { start_date: start || null, due_date: null })}>Save</button>
@@ -354,7 +355,7 @@ function AddSubtask({ onAdd }) {
         <label style={{ position: "relative", flex: 1, minHeight: 44, borderRadius: 12, background: "var(--paper)", display: "flex", alignItems: "center", gap: 8, padding: "0 12px", fontSize: 14, color: date ? "var(--ink)" : "var(--muted)", cursor: "pointer" }}>
           <Icon name="cal" size={16} width={1.6} />
           {date ? dateRange(date) : "Due date"}
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Subtask due date"
+          <input type="date" onClick={openPicker} value={date} onChange={(e) => setDate(e.target.value)} aria-label="Subtask due date"
             style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} />
         </label>
         <button className="chip on" style={{ minHeight: 44, padding: "0 18px" }} disabled={!v.trim()}>Add</button>

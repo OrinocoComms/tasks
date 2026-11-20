@@ -1,3 +1,4 @@
+import { openPicker } from "../ui.jsx";
 import { useState } from "react";
 import { childrenOf, dateRange, fmtMins, niceDate, outcomeProgress, remainingMins } from "../lib/logic.js";
 import { Back, Dot, Icon, Tick } from "../ui.jsx";
@@ -22,7 +23,7 @@ function DuePill({ value, onChange }) {
   return (
     <label className="pillbtn" style={{ marginLeft: "auto" }}>
       <Icon name="cal" size={15} width={1.6} /><span className="val">{value ? `Due ${niceDate(value)}` : "Set due date"}</span>
-      <input type="date" value={value || ""} onChange={(e) => onChange(e.target.value || null)} aria-label="Due date"
+      <input type="date" onClick={openPicker} value={value || ""} onChange={(e) => onChange(e.target.value || null)} aria-label="Due date"
         style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} />
     </label>
   );
