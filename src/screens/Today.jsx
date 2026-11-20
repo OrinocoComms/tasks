@@ -84,11 +84,11 @@ export default function Today({ db, actions }) {
 
         <Section title="Unallocated" open={open.unallocated} onToggle={() => setOpen({ ...open, unallocated: !open.unallocated })}
           summary={String(unalloc.length)}>
+          {unalloc.length === 0 && <div className="empty">Nothing here.</div>}
           {unalloc.map((item, i) => (
             <ItemRow key={item.id} item={item} db={db} first={i === 0} glowing={glow === item.id}
               onTick={() => toggle(item)} href={`#/task/${item.id}`} meta={metaFor(item, true)} />
           ))}
-          <QuickAdd onAdd={(title) => actions.addItem({ title })} first={unalloc.length === 0} />
         </Section>
       </div>
       <Nav tab="today" />
@@ -115,18 +115,6 @@ function Section({ title, summary, open, onToggle, children }) {
   );
 }
 
-function QuickAdd({ onAdd, first }) {
-  const [v, setV] = useState("");
-  const [editing, setEditing] = useState(false);
-  if (!editing) return <button className="addrow" style={first ? { borderTop: 0 } : undefined} onClick={() => setEditing(true)}>+ Add a task</button>;
-  return (
-    <form onSubmit={(e) => { e.preventDefault(); if (v.trim()) onAdd(v.trim()); setV(""); }} style={{ borderTop: "1px solid var(--line)", padding: "6px 10px", display: "flex", gap: 8 }}>
-      <input className="input" autoFocus value={v} onChange={(e) => setV(e.target.value)} placeholder="What needs doing?" style={{ background: "var(--paper)" }}
-        onBlur={() => { if (!v.trim()) setEditing(false); }} />
-      <button className="chip on" style={{ minHeight: 44 }}>Add</button>
-    </form>
-  );
-}
 
 function AddChooser({ onClose }) {
   return (
