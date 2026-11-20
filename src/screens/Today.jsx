@@ -29,7 +29,6 @@ export default function Today({ db, actions }) {
     return (
       <>
         {parent ? <span>{parent.title}</span> : outcome ? <span>{outcome.title}</span> : null}
-        {showVoice && item.from_voice && <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="mic" size={12} />Voice note</span>}
       </>
     );
   };
