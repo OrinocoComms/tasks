@@ -1,4 +1,4 @@
-import { CalendarSheet } from "../Calendar.jsx";
+import { DatePopup } from "../Calendar.jsx";
 import { useState } from "react";
 import { DAYS, ORDS, addDays, childrenOf, dateRange, fmtMins, nextOccurrence, ordinal, remainingMins, repeatLabel, todayStr } from "../lib/logic.js";
 import { Back, Dot, Icon, Tick } from "../ui.jsx";
@@ -214,7 +214,8 @@ export default function Task({ db, actions, id, query }) {
         )}
       </div>
 
-      {dateOpen && <DateSheet item={item} onSave={(c) => { set(c); setDateOpen(false); }} onClose={() => setDateOpen(false)} />}
+      {dateOpen && <DatePopup title="Due date" allowRange start={item.start_date || item.due_date} due={item.due_date}
+        onSave={({ start, due }) => { set({ start_date: start, due_date: due }); setDateOpen(false); }} onClose={() => setDateOpen(false)} />}
       {dialogs}
     </div>
   );
@@ -293,52 +294,19 @@ function RepeatPicker({ value, onChange }) {
   );
 }
 
-function DateSheet({ item, onSave, onClose }) {
-  const [range, setRange] = useState(!!(item.start_date && item.due_date && item.start_date !== item.due_date));
-  const [start, setStart] = useState(item.start_date || item.due_date || todayStr());
-  const [end, setEnd] = useState(item.due_date || "");
-  const [picking, setPicking] = useState(null); // "start" | "end"
-  return (
-    <div className="scrim" onClick={onClose}>
-      <div className="sheet" role="dialog" aria-label="Due date" onClick={(e) => e.stopPropagation()}>
-        <span className="kicker">When</span>
-        <div className="seg" style={{ alignSelf: "flex-start" }}>
-          <button className={!range ? "on" : ""} onClick={() => setRange(false)}>One day</button>
-          <button className={range ? "on" : ""} onClick={() => setRange(true)}>Start → finish</button>
-        </div>
-        <button type="button" className="drow first" style={{ background: "var(--card)", borderRadius: 14, padding: "0 14px" }} onClick={() => setPicking("start")}>
-          <span className="k">{range ? "Start" : "Date"}</span><span className="v num">{start ? dateRange(start) : "Choose"}</span><Icon name="cal" size={17} width={1.6} />
-        </button>
-        {range && (
-          <button type="button" className="drow first" style={{ background: "var(--card)", borderRadius: 14, padding: "0 14px" }} onClick={() => setPicking("end")}>
-            <span className="k">Finish (due)</span><span className="v num">{end ? dateRange(end) : "Choose"}</span><Icon name="cal" size={17} width={1.6} />
-          </button>
-        )}
-        {picking && <CalendarSheet title={picking === "start" ? (range ? "Start date" : "Date") : "Finish date"}
-          value={picking === "start" ? start : end} min={picking === "end" ? start : undefined}
-          onPick={(d) => { if (picking === "start") { setStart(d); if (end && end < d) setEnd(d); } else setEnd(d); setPicking(null); }}
-          onClose={() => setPicking(null)} />}
-        <button className="btn" onClick={() => onSave(range ? { start_date: start || null, due_date: end || null } : { start_date: start || null, due_date: null })}>Save</button>
-        <button className="btn white" onClick={() => onSave({ start_date: null, due_date: null })}>No date</button>
-        <button className="btn quiet" onClick={onClose}>Cancel</button>
-      </div>
-    </div>
-  );
-}
-
 function AddSubtask({ onAdd }) {
   const [v, setV] = useState("");
   const [mins, setMins] = useState(null);
   const [custom, setCustom] = useState(false);
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState({ start: null, due: null });
   const [cal, setCal] = useState(false);
   const [editing, setEditing] = useState(false);
   if (!editing) return <button className="addrow" onClick={() => setEditing(true)}>+ Add a subtask</button>;
-  const reset = () => { setV(""); setMins(null); setCustom(false); setDate(""); };
+  const reset = () => { setV(""); setMins(null); setCustom(false); setDate({ start: null, due: null }); };
   const submit = (e) => {
     e.preventDefault();
     if (!v.trim()) return;
-    onAdd({ title: v.trim(), est_mins: mins ? Number(mins) : null, start_date: date || null });
+    onAdd({ title: v.trim(), est_mins: mins ? Number(mins) : null, start_date: date.start, due_date: date.due });
     reset();
   };
   return (
@@ -359,15 +327,15 @@ function AddSubtask({ onAdd }) {
       )}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <button type="button" onClick={() => setCal(true)} aria-label="Subtask due date"
-          style={{ flex: 1, minHeight: 44, border: 0, borderRadius: 12, background: "var(--paper)", display: "flex", alignItems: "center", gap: 8, padding: "0 12px", fontSize: 14, color: date ? "var(--ink)" : "var(--muted)", textAlign: "left" }}>
+          style={{ flex: 1, minHeight: 44, border: 0, borderRadius: 12, background: "var(--paper)", display: "flex", alignItems: "center", gap: 8, padding: "0 12px", fontSize: 14, color: date.start ? "var(--ink)" : "var(--muted)", textAlign: "left" }}>
           <Icon name="cal" size={16} width={1.6} />
-          {date ? dateRange(date) : "Due date"}
+          {date.start ? dateRange(date.start, date.due) : "Due date"}
         </button>
         <button className="chip on" style={{ minHeight: 44, padding: "0 18px" }} disabled={!v.trim()}>Add</button>
       </div>
       <button type="button" className="btn quiet" style={{ minHeight: 36 }} onClick={() => { reset(); setEditing(false); }}>Close</button>
-      {cal && <CalendarSheet title="Subtask due date" value={date} onPick={(d) => { setDate(d); setCal(false); }}
-        onClear={() => { setDate(""); setCal(false); }} onClose={() => setCal(false)} />}
+      {cal && <DatePopup title="Subtask due date" allowRange start={date.start} due={date.due}
+        onSave={(d) => { setDate(d); setCal(false); }} onClose={() => setCal(false)} />}
     </form>
   );
 }

@@ -1,4 +1,4 @@
-import { CalendarSheet } from "../Calendar.jsx";
+import { DatePopup } from "../Calendar.jsx";
 import { useEffect, useRef, useState } from "react";
 import {
   addDays, doneToday, fmtMins, plannedMins, quickWins, todayItems, todayStr, unallocated, dateRange,
@@ -240,7 +240,7 @@ function DateButton({ label, onPick }) {
         style={{ width: 36, height: 36, border: 0, borderRadius: "50%", background: "var(--paper)", display: "grid", placeItems: "center", flexShrink: 0 }}>
         <Icon name="cal" size={16} width={1.6} />
       </button>
-      {open && <CalendarSheet title="Move to" min={addDays(todayStr(), 1)} onPick={(d) => { setOpen(false); onPick(d); }} onClose={() => setOpen(false)} />}
+      {open && <DatePopup title="Move to" min={addDays(todayStr(), 1)} onSave={({ start }) => { setOpen(false); onPick(start); }} onClose={() => setOpen(false)} />}
     </>
   );
 }
@@ -257,7 +257,7 @@ function Shifter({ item, onClose, onMove, onDrop, onKeep, keepLabel }) {
         <span style={{ fontSize: 14, color: "var(--soft)", marginBottom: 6 }}>It might be too big, or not that important. What would help?</span>
         <a className="btn" href={`#/task/${item.id}`}>Break it into smaller steps</a>
         <button className="btn white" onClick={() => setPicking(true)}>Pick a date and stick to it</button>
-        {picking && <CalendarSheet title="Do it on" min={addDays(todayStr(), 1)} onPick={(d) => { setPicking(false); onMove(d); }} onClose={() => setPicking(false)} />}
+        {picking && <DatePopup title="Do it on" min={addDays(todayStr(), 1)} onSave={({ start }) => { setPicking(false); onMove(start); }} onClose={() => setPicking(false)} />}
         <button className="btn white" onClick={onDrop}>Drop it</button>
         {onKeep
           ? <button className="btn quiet" onClick={onKeep}>{keepLabel}</button>

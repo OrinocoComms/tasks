@@ -1,4 +1,4 @@
-import { CalendarSheet } from "../Calendar.jsx";
+import { DatePopup } from "../Calendar.jsx";
 import { useState } from "react";
 import { childrenOf, dateRange, fmtMins, niceDate, outcomeProgress, remainingMins } from "../lib/logic.js";
 import { Back, Dot, Icon, Tick } from "../ui.jsx";
@@ -26,8 +26,7 @@ function DuePill({ value, onChange }) {
       <button type="button" className="pillbtn" style={{ marginLeft: "auto" }} onClick={() => setOpen(true)}>
         <Icon name="cal" size={15} width={1.6} /><span className="val">{value ? `Due ${niceDate(value)}` : "Set due date"}</span>
       </button>
-      {open && <CalendarSheet title="Outcome due date" value={value} onPick={(d) => { onChange(d); setOpen(false); }}
-        onClear={() => { onChange(null); setOpen(false); }} onClose={() => setOpen(false)} />}
+      {open && <DatePopup title="Outcome due date" start={value} onSave={({ start }) => { onChange(start); setOpen(false); }} onClose={() => setOpen(false)} />}
     </>
   );
 }
