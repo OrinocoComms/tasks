@@ -353,7 +353,7 @@ function AddSubtask({ onAdd }) {
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <label style={{ position: "relative", flex: 1, minHeight: 44, borderRadius: 12, background: "var(--paper)", display: "flex", alignItems: "center", gap: 8, padding: "0 12px", fontSize: 14, color: date ? "var(--ink)" : "var(--muted)", cursor: "pointer" }}>
           <Icon name="cal" size={16} width={1.6} />
-          {date ? dateRange(date) : "Due date (optional)"}
+          {date ? dateRange(date) : "Due date"}
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Subtask due date"
             style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }} />
         </label>
