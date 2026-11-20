@@ -46,6 +46,14 @@ export default function Task({ db, actions, id, query }) {
     order.forEach((x, i) => { if (x.position !== i) actions.updateItem(x.id, { position: i }); });
   };
 
+  // Make a new outcome, then come back to this task with it linked
+  const newOutcome = () => {
+    const area = item.area_id ? `&area=${item.area_id}` : "";
+    if (!isNew) return go(`/outcome/new?task=${item.id}${area}`);
+    if (draft.title.trim()) { const row = actions.addItem({ ...draft, title: draft.title.trim() }); return go(`/outcome/new?task=${row.id}${area}`); }
+    go(`/outcome/new?then=task${area}`);
+  };
+
   const save = () => {
     if (!draft.title.trim()) return;
     const row = actions.addItem({ ...draft, title: draft.title.trim() });
@@ -65,11 +73,14 @@ export default function Task({ db, actions, id, query }) {
           <label className="pillbtn" style={{ marginLeft: "auto" }}>
             <span className="lbl">Outcome</span><span className="val">{outcome ? outcome.title : "None"}</span>
             <select value={item.outcome_id || ""} aria-label="Outcome" onChange={(e) => {
+              if (e.target.value === "__new") return newOutcome();
               const o = db.outcomes.find((x) => x.id === e.target.value);
               set({ outcome_id: e.target.value || null, ...(o?.area_id && !item.area_id ? { area_id: o.area_id } : {}) });
             }}>
               <option value="">None</option>
-              {db.outcomes.filter((o) => !o.achieved_at || o.id === item.outcome_id).map((o) => <option key={o.id} value={o.id}>{o.title}</option>)}
+              {db.outcomes.filter((o) => o.id === item.outcome_id || (!o.achieved_at && (!item.area_id || o.area_id === item.area_id)))
+                .map((o) => <option key={o.id} value={o.id}>{o.title}</option>)}
+              <option value="__new">+ Add new outcome</option>
             </select>
           </label>
         )}

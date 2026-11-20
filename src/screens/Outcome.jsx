@@ -32,13 +32,14 @@ function DuePill({ value, onChange }) {
 }
 
 export default function Outcome({ db, actions, id, query }) {
-  if (id === "new") return <NewOutcome db={db} actions={actions} areaId={query.area} />;
+  if (id === "new") return <NewOutcome db={db} actions={actions} areaId={query.area} taskId={query.task} then={query.then} />;
   const outcome = db.outcomes.find((o) => o.id === id);
   if (!outcome) return <div className="page"><div className="topbar"><Back href="#/" /></div><div className="empty">Outcome not found.</div></div>;
   return <OutcomeView db={db} actions={actions} outcome={outcome} />;
 }
 
-function NewOutcome({ db, actions, areaId }) {
+function NewOutcome({ db, actions, areaId, taskId, then }) {
+  const fromTask = taskId || then === "task";
   const [title, setTitle] = useState("");
   const [area, setArea] = useState(areaId || null);
   const [due, setDue] = useState(null);
@@ -46,6 +47,12 @@ function NewOutcome({ db, actions, areaId }) {
   const save = () => {
     if (!title.trim()) return;
     const o = actions.addOutcome({ title: title.trim(), area_id: area, due_date: due, description: desc.trim() });
+    if (taskId) {
+      const t = db.items.find((i) => i.id === taskId);
+      actions.updateItem(taskId, { outcome_id: o.id, ...(area && !t?.area_id ? { area_id: area } : {}) });
+      return go(`/task/${taskId}`);
+    }
+    if (then === "task") return go(`/task/new?outcome=${o.id}${area ? `&area=${area}` : ""}`);
     go(`/outcome/${o.id}`);
   };
   return (
@@ -58,9 +65,9 @@ function NewOutcome({ db, actions, areaId }) {
         <label className="small" style={{ display: "flex", flexDirection: "column", gap: 6 }}>Description (optional)
           <textarea className="input" rows={3} value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Why it matters, what done looks like…" />
         </label>
-        <span className="small">Next you'll add its tasks: every outcome needs at least one.</span>
+        {!fromTask && <span className="small">Next you'll add its tasks: every outcome needs at least one.</span>}
       </div>
-      <div className="bottombar"><button className={`btn ${title.trim() ? "" : "off"}`} onClick={save}>Save and add tasks</button></div>
+      <div className="bottombar"><button className={`btn ${title.trim() ? "" : "off"}`} onClick={save}>{fromTask ? "Save" : "Save and add tasks"}</button></div>
     </div>
   );
 }
