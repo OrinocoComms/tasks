@@ -5,7 +5,7 @@ import { DEFAULT_AREAS, addDays, nextOccurrence, todayStr, toDateStr } from "./l
 // Demo mode: no Supabase configured, or ?demo in the address. Data stays in this browser.
 export const isDemo = !supabase || new URLSearchParams(location.search).has("demo");
 
-const LS = "focus-demo-v1";
+const LS = "focus-demo-v2";
 const uid = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
 
