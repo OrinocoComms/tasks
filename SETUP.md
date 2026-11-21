@@ -7,13 +7,13 @@ The app uses the `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` settings that 
 Supabase → **SQL Editor** → **New query** → paste all of `supabase/01-schema.sql` → **Run**.
 Nothing existing is deleted. (Already ran it before the weekly review was added? Run `supabase/03-weekly-review.sql` too.)
 
-## 2. Add the voice helper (shortens what you say to a 5-word title)
+## 2. Add the title tidier (shortens long task titles to 5 words)
 1. Supabase → **Edge Functions** → **Deploy a new function** → **Via editor**.
 2. Name it exactly `condense`.
 3. Replace the sample code with everything in `supabase/functions/condense/index.ts` → **Deploy**.
 4. Edge Functions → **Secrets** → add `ANTHROPIC_API_KEY` with your Claude Console key as the value.
 
-If this isn't set up, voice still works: the title just uses the first five words.
+If this isn't set up, long titles are just cut to their first five words.
 
 ## 3. Sign in
 Open the app → **First time? Create an account**. If it asks you to confirm by email, click the link, then sign in.
@@ -28,4 +28,4 @@ Supabase → **Authentication** → **Sign In / Providers** → turn off **Allow
 ## Notes
 - Add `?demo` to the address to try the app with sample data that only lives in that browser.
 - Install it on your phone: Safari → Share → **Add to Home Screen** (iPhone), or Chrome → **Install app** (Android/desktop).
-- The daily limit (1 hour by default) can be changed under the third tab.
+- Daily limit, review day and look (Classic / Nokia 3310): Review tab → ⚙.
