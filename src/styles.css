@@ -145,7 +145,7 @@ html[data-theme="nokia"] {
   --salmon: #232b18;
   --rust-soft: #aebf86;
   --done-bg: #b3c38d;
-  --font: "Pixelify Sans", ui-monospace, monospace;
+  --font: "DST Digits", "Pixelify Sans", ui-monospace, monospace;
 }
 html[data-theme="nokia"] body { -webkit-font-smoothing: none; font-smooth: never; }
 /* LCD pixel grid */
